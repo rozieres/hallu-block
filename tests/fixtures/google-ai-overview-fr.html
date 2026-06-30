@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<!--
+  Hallu Block E2E fixture — google.fr SERP WITH an AI Overview.
+  Faithful (not pixel-perfect) snapshot of the structure that matters for
+  detection: the AI Overview arrives in a div[data-async-type="folsrch"] inside
+  a div[data-mcpr] wrapper, led by an "Aperçu IA" heading. Obfuscated class
+  names are intentionally randomized to prove the engine never relies on them.
+  Organic results sit below in #rso and must survive.
+-->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>intelligence artificielle danger - Recherche Google</title>
+</head>
+<body>
+  <div id="rcnt">
+    <div id="center_col">
+
+      <!-- ====== AI OVERVIEW (must be hidden) ====== -->
+      <style>.GcKpu{margin-bottom:24px}</style>
+      <div data-mcpr="1" class="GcKpu" style="margin-bottom: 24px;">
+        <div data-async-type="folsrch" class="hdzaWe YzCcne" aria-label="Aperçu IA">
+          <div role="heading" aria-level="2" class="M8OgIe">Aperçu IA</div>
+          <div class="ULSxyf">
+            <p>L'intelligence artificielle générative présente des risques documentés :
+               hallucinations, désinformation, et concentration du trafic au détriment
+               des créateurs de contenu. <em>(Résumé généré par IA — potentiellement inexact.)</em></p>
+            <div class="Kevs9">
+              <a href="https://www.exemple-ia.test/source-a">Source A</a>
+              <a href="https://www.exemple-ia.test/source-b">Source B</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== ORGANIC RESULTS (must remain visible) ====== -->
+      <div id="search">
+        <div id="rso">
+          <div class="g">
+            <a href="https://www.cnil.fr/intelligence-artificielle">
+              <h3>Intelligence artificielle : les risques et la régulation</h3>
+            </a>
+            <div class="VwiC3b">Le point sur les enjeux de l'IA générative, les risques
+              documentés et le cadre juridique européen.</div>
+          </div>
+          <div class="g">
+            <a href="https://www.lemonde.fr/pixels/ia">
+              <h3>Ce que l'IA change vraiment, loin de la hype</h3>
+            </a>
+            <div class="VwiC3b">Enquête sur les usages réels et les promesses non tenues
+              des modèles génératifs.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>
