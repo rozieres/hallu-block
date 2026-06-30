@@ -9,6 +9,11 @@ dist/
 web-ext-artifacts/
 *.zip
 
+# Tests (Playwright)
+test-results/
+playwright-report/
+.playwright-mcp/
+
 # Logs & divers
 *.log
 .DS_Store

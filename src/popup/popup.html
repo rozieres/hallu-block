@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="popup.css">
+  <title>Hallu Block</title>
+</head>
+<body>
+  <div class="popup">
+    <div class="pop-head">
+      <span class="pop-wordmark">Hall<span class="u">u</span> Block<span class="cur">█</span></span>
+    </div>
+
+    <p class="pop-tagline" data-i18n="tagline"></p>
+
+    <div class="counter">
+      <div class="num"><span class="num-val">0</span><span class="cur">█</span></div>
+      <div class="num-label" data-i18n="counter_label"></div>
+      <div class="num-sub"></div>
+    </div>
+
+    <div class="tg-group" data-i18n="group_google"></div>
+    <ul class="toggles">
+      <li class="on" data-feature="google-ai-overview">
+        <span class="check">[█]</span>
+        <div>
+          <span class="tg-label" data-i18n="toggle_google_overview_label"></span>
+          <span class="tg-sub" data-i18n="toggle_google_overview_sub"></span>
+        </div>
+      </li>
+      <li class="on" data-feature="google-ai-mode">
+        <span class="check">[█]</span>
+        <div>
+          <span class="tg-label" data-i18n="toggle_google_aimode_label"></span>
+          <span class="tg-sub" data-i18n="toggle_google_aimode_sub"></span>
+        </div>
+      </li>
+      <li class="on" data-feature="anti-slop">
+        <span class="check">[█]</span>
+        <div>
+          <span class="tg-label" data-i18n="toggle_slop_label"></span>
+          <span class="tg-sub"><span data-i18n="toggle_slop_sub"></span>
+            <a class="inline-link" data-i18n="slop_list_link" data-href="slop-list" target="_blank" rel="noopener"></a></span>
+        </div>
+      </li>
+    </ul>
+
+    <div class="radical">
+      <div class="rk" data-i18n="radical_kicker"></div>
+      <button type="button" data-feature="udm14" data-i18n="radical_button"></button>
+      <p class="rk-sub" data-i18n="radical_sub"></p>
+    </div>
+
+    <div class="tg-group" data-i18n="group_other"></div>
+    <ul class="toggles">
+      <li data-feature="bing-copilot">
+        <span class="check">[ ]</span>
+        <div>
+          <span class="tg-label" data-i18n="toggle_bing_label"></span>
+          <span class="tg-sub" data-i18n="toggle_bing_sub"></span>
+        </div>
+      </li>
+      <li class="on" data-feature="ddg-assist">
+        <span class="check">[█]</span>
+        <div>
+          <span class="tg-label" data-i18n="toggle_ddg_label"></span>
+          <span class="tg-sub" data-i18n="toggle_ddg_sub"></span>
+        </div>
+      </li>
+      <li class="on" data-feature="youtube-ask">
+        <span class="check">[█]</span>
+        <div>
+          <span class="tg-label" data-i18n="toggle_youtube_label"></span>
+          <span class="tg-sub" data-i18n="toggle_youtube_sub"></span>
+        </div>
+      </li>
+      <li class="on" data-feature="amazon-rufus">
+        <span class="check">[█]</span>
+        <div>
+          <span class="tg-label" data-i18n="toggle_amazon_label"></span>
+          <span class="tg-sub" data-i18n="toggle_amazon_sub"></span>
+        </div>
+      </li>
+    </ul>
+
+    <div class="tg-group" data-i18n="group_display"></div>
+    <ul class="toggles">
+      <li class="on" data-feature="show-blocks">
+        <span class="check">[█]</span>
+        <div>
+          <span class="tg-label" data-i18n="toggle_show_blocks_label"></span>
+          <span class="tg-sub" data-i18n="toggle_show_blocks_sub"></span>
+        </div>
+      </li>
+    </ul>
+
+    <div class="pop-foot">
+      <a class="foot-brand" data-href="newsletter" target="_blank" rel="noopener"></a>
+      <a class="foot-about" data-i18n="foot_about" data-href="about" target="_blank" rel="noopener"></a>
+      <p class="priv" data-i18n="foot_privacy"></p>
+    </div>
+  </div>
+
+  <script src="../lib/browser-polyfill.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

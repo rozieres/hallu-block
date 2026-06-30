@@ -1,0 +1,26 @@
+/* Hallu Block — anti-flicker baseline for Google Search (injected at
+   document_start). Chrome injects content_scripts[].css "before any DOM
+   construction or page rendering occurs", so these rules are resident before
+   the AI Overview shell is parsed — no flash. The engine then refines:
+   annotates, counts, catches text-detected blocks, and reveals on demand.
+
+   Hooks are the FUNCTIONAL async-load attributes (data-async-type / data-mcpr),
+   never Google's rotating obfuscated classes. The AI Overview is delivered
+   async via /async/folsrch a few seconds after first paint, but a static
+   stylesheet rule applies the moment the element is parsed in — now or later.
+
+   The hide is released page-wide by an html.hb-show-google-ai-overview marker
+   that the engine adds when the feature is toggled off, or when the user clicks
+   "afficher" on the annotation bar. */
+
+html:not(.hb-show-google-ai-overview) div[data-async-type="folsrch"],
+html:not(.hb-show-google-ai-overview) div[data-async-type="aiOverview"],
+html:not(.hb-show-google-ai-overview) div[data-mcpr]:has(div[data-async-type="folsrch"]),
+html:not(.hb-show-google-ai-overview) div[data-mcpr]:has(div[data-async-type="aiOverview"]) {
+  display: none !important;
+}
+
+/* Engine-applied hide, for text-detected containers the attribute rules miss. */
+.hb-hidden {
+  display: none !important;
+}
