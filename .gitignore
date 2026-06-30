@@ -1,0 +1,15 @@
+# Discussions & specs internes — non publiées
+_reflexion/
+
+# Dépendances
+node_modules/
+
+# Build / packaging
+dist/
+web-ext-artifacts/
+*.zip
+
+# Logs & divers
+*.log
+.DS_Store
+Thumbs.db
