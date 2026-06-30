@@ -124,7 +124,14 @@ body {
   text-align: left;
 }
 .radical button::before { content: "▸ "; color: var(--green); }
+.radical button:hover { border-color: var(--green); }
+/* Engaged: udm=14 rewrite is live — invert to read as a pressed state. */
+.radical button.on { background: var(--ink); color: var(--bg); }
+.radical button.on::before { content: "▾ "; color: var(--green); }
 .radical .rk-sub { font-size: 10.5px; color: var(--muted); margin-top: 7px; line-height: 1.4; }
+
+/* Switches are clickable rows. */
+.toggles li:hover { background: #efe9da; }
 
 .pop-foot { padding: 6px 16px 15px; }
 .pop-foot a {

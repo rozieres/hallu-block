@@ -4,7 +4,7 @@ const { defineConfig } = require("@playwright/test");
 
 module.exports = defineConfig({
   testDir: "./tests",
-  testMatch: ["**/engine.spec.js", "**/e2e.spec.js"],
+  testMatch: ["**/engine.spec.js", "**/popup.spec.js", "**/e2e.spec.js"],
   timeout: 45000,
   expect: { timeout: 10000 },
   fullyParallel: false,

@@ -1,0 +1,209 @@
+"use strict";
+
+// Hallu Block — popup wiring + DNR config tests (deterministic, run everywhere).
+//
+// Loads the REAL popup.html + popup.js into real Chromium with a stubbed
+// window.browser (storage + i18n + messaging) that records every write, exactly
+// the way engine.spec stubs the WebExtension APIs. This proves the switches
+// read/write storage.local.toggles and that the radical button drives the udm14
+// ruleset — without packaging the extension (newer Chrome blocks CLI loading).
+//
+// The udm=14 redirect itself is network-level (declarativeNetRequest) and can't
+// be exercised by DOM injection; we validate the ruleset's SHAPE here and verify
+// the live redirect manually in a real profile (see PR notes).
+
+const { test, expect, chromium } = require("@playwright/test");
+const fs = require("fs");
+const path = require("path");
+
+const ROOT = path.resolve(__dirname, "..");
+const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
+
+const FR = JSON.parse(read("_locales/fr/messages.json"));
+const MESSAGES = Object.fromEntries(Object.entries(FR).map(([k, v]) => [k, v.message]));
+const POPUP_HTML = read("src/popup/popup.html");
+const POPUP_JS = read("src/popup/popup.js");
+const POPUP_CSS = read("src/popup/popup.css");
+
+let browser, context, page;
+
+test.beforeAll(async () => {
+  browser = await chromium.launch({
+    channel: "chrome",
+    headless: false,
+    args: ["--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage"],
+  });
+});
+test.afterAll(async () => {
+  await browser?.close();
+});
+test.beforeEach(async () => {
+  context = await browser.newContext();
+  page = await context.newPage();
+});
+test.afterEach(async () => {
+  await context?.close();
+});
+
+// Mount popup.html (minus its real <script>/<link> tags), stub the WebExtension
+// APIs, then inject popup.js so init() runs against the stub.
+async function mountPopup({ toggles } = {}) {
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(String(e)));
+
+  const html = POPUP_HTML
+    .replace(/<script\b[\s\S]*?<\/script>/gi, "")
+    .replace(/<link\b[^>]*>/gi, "");
+  await page.setContent(html, { waitUntil: "domcontentloaded" });
+  await page.addStyleTag({ content: POPUP_CSS });
+
+  await page.evaluate(
+    ({ messages, toggles }) => {
+      window.__sets = [];
+      window.__msgs = [];
+      const store = {};
+      if (toggles) store.toggles = toggles;
+      window.browser = {
+        i18n: {
+          getMessage: (k, subs) => {
+            let m = messages[k] || "";
+            if (subs != null) {
+              const a = Array.isArray(subs) ? subs : [subs];
+              m = m.replace(/\$count\$/gi, a[0] ?? "").replace(/\$1/g, a[0] ?? "");
+            }
+            return m;
+          },
+          getUILanguage: () => "fr-FR",
+        },
+        storage: {
+          local: {
+            get: async (key) => {
+              if (typeof key === "string") return { [key]: store[key] };
+              if (Array.isArray(key)) return Object.fromEntries(key.map((k) => [k, store[k]]));
+              return { ...store };
+            },
+            set: async (obj) => {
+              // Deep-snapshot: popup.js writes the SAME toggles object each time,
+              // so we must capture its value at write time, not the live ref.
+              window.__sets.push(JSON.parse(JSON.stringify(obj)));
+              Object.assign(store, obj);
+            },
+          },
+        },
+        runtime: {
+          sendMessage: async (m) => {
+            window.__msgs.push(m);
+            return { ok: true };
+          },
+        },
+      };
+    },
+    { messages: MESSAGES, toggles }
+  );
+
+  await page.addScriptTag({ content: POPUP_JS });
+  return { errors };
+}
+
+// wireToggles() sets cursor:pointer on every switch row; once that lands, init()
+// has finished and all click handlers (rows + radical button) are attached.
+const ON = /\bon\b/;
+const ready = () =>
+  expect(page.locator('li[data-feature="google-ai-overview"]')).toHaveCSS("cursor", "pointer");
+const sets = () => page.evaluate(() => window.__sets);
+const msgs = () => page.evaluate(() => window.__msgs);
+
+test("switches reflect stored toggles on open", async () => {
+  const { errors } = await mountPopup({
+    toggles: { "google-ai-overview": false, "bing-copilot": true },
+  });
+
+  const overview = page.locator('li[data-feature="google-ai-overview"]');
+  await expect(overview).not.toHaveClass(ON);
+  await expect(overview.locator(".check")).toHaveText("[ ]");
+
+  const bing = page.locator('li[data-feature="bing-copilot"]');
+  await expect(bing).toHaveClass(ON);
+  await expect(bing.locator(".check")).toHaveText("[█]");
+
+  expect(errors).toEqual([]);
+});
+
+test("clicking a switch flips it visually and persists to storage", async () => {
+  await mountPopup(); // empty storage → service-worker defaults (overview on)
+  await ready();
+
+  const overview = page.locator('li[data-feature="google-ai-overview"]');
+  await expect(overview).toHaveClass(ON);
+
+  await overview.click();
+
+  await expect(overview).not.toHaveClass(ON);
+  await expect(overview.locator(".check")).toHaveText("[ ]");
+
+  const written = await sets();
+  expect(written.length).toBeGreaterThanOrEqual(1);
+  expect(written[written.length - 1].toggles["google-ai-overview"]).toBe(false);
+});
+
+test("clicking the community-list link does NOT flip the anti-slop switch", async () => {
+  await mountPopup();
+  await ready();
+
+  const slop = page.locator('li[data-feature="anti-slop"]');
+  await expect(slop).toHaveClass(ON);
+
+  // Neutralize the external navigation, then click the embedded link.
+  await page.evaluate(() => {
+    document
+      .querySelector('li[data-feature="anti-slop"] a')
+      .addEventListener("click", (e) => e.preventDefault());
+  });
+  await slop.locator("a").click();
+
+  await expect(slop).toHaveClass(ON); // unchanged
+  expect(await sets()).toEqual([]); // nothing persisted
+});
+
+test("radical button toggles udm=14, persists it, and messages the worker", async () => {
+  await mountPopup();
+  await ready();
+
+  const btn = page.locator('button[data-feature="udm14"]');
+  await expect(btn).not.toHaveClass(ON);
+  await expect(btn).toHaveAttribute("aria-pressed", "false");
+
+  await btn.click();
+
+  await expect(btn).toHaveClass(ON);
+  await expect(btn).toHaveAttribute("aria-pressed", "true");
+
+  const written = await sets();
+  expect(written[written.length - 1].toggles.udm14).toBe(true);
+  expect(await msgs()).toContainEqual({ type: "hb-set-udm14", value: true });
+});
+
+test("udm=14 DNR ruleset has a valid, loop-safe shape and is registered disabled", () => {
+  const dnr = JSON.parse(read("src/rules/dnr/udm14.json"));
+  expect(Array.isArray(dnr)).toBe(true);
+  expect(dnr).toHaveLength(1);
+
+  const rule = dnr[0];
+  expect(Number.isInteger(rule.id)).toBe(true);
+  expect(rule.action.type).toBe("redirect");
+  expect(rule.action.redirect.transform.queryTransform.addOrReplaceParams).toEqual([
+    { key: "udm", value: "14" },
+  ]);
+  expect(rule.condition.resourceTypes).toContain("main_frame");
+  expect(typeof rule.condition.regexFilter).toBe("string");
+  // DNR's regex engine is RE2 — no lookarounds. Guard against an accidental (?=…).
+  expect(rule.condition.regexFilter).not.toMatch(/\(\?/);
+
+  // The manifest must register the ruleset, disabled by default, with the perm.
+  const mf = JSON.parse(read("manifest.json"));
+  expect(mf.permissions).toContain("declarativeNetRequest");
+  const rs = (mf.declarative_net_request.rule_resources || []).find((r) => r.id === "udm14");
+  expect(rs).toBeTruthy();
+  expect(rs.enabled).toBe(false);
+  expect(rs.path).toBe("src/rules/dnr/udm14.json");
+});
