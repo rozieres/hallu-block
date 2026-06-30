@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<!--
+  Hallu Block E2E fixture — google.fr SERP carrying the AI Mode (Mode IA) tab.
+  What matters for detection: the search-tools nav is a semantic
+  [role="navigation"] > [role="list"], and the AI Mode entry is the [role="listitem"]
+  whose link points at udm=50 (the param that swaps the link list for a chat panel).
+  Only THAT tab must be hidden; the other tabs and the organic results survive.
+  Obfuscated class names are randomized to prove the engine never relies on them.
+-->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>intelligence artificielle - Recherche Google</title>
+</head>
+<body>
+  <div id="rcnt">
+
+    <!-- ====== SEARCH-TOOLS NAV (only the Mode IA tab must be hidden) ====== -->
+    <div id="appbar">
+      <div role="navigation" aria-label="Filtres et thèmes" class="crJ18e">
+        <div role="list" class="IUOThf">
+          <div role="listitem" class="YmvwI"><a href="/search?q=intelligence+artificielle">Tous</a></div>
+          <div role="listitem" class="YmvwI"><a href="/search?q=intelligence+artificielle&udm=2">Images</a></div>
+          <div role="listitem" class="YmvwI"><a href="/search?q=intelligence+artificielle&udm=7">Vidéos</a></div>
+          <div role="listitem" class="YmvwI">
+            <a href="/search?q=intelligence+artificielle&udm=50&aep=11" aria-label="Mode IA">Mode IA</a>
+          </div>
+          <div role="listitem" class="YmvwI"><a href="/search?q=intelligence+artificielle&tbm=nws">Actualités</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="center_col">
+      <!-- ====== ORGANIC RESULTS (must remain visible) ====== -->
+      <div id="search">
+        <div id="rso">
+          <div class="g">
+            <a href="https://www.cnil.fr/intelligence-artificielle">
+              <h3>Intelligence artificielle : les risques et la régulation</h3>
+            </a>
+            <div class="VwiC3b">Le point sur les enjeux de l'IA générative, les risques
+              documentés et le cadre juridique européen.</div>
+          </div>
+          <div class="g">
+            <a href="https://www.lemonde.fr/pixels/ia">
+              <h3>Ce que l'IA change vraiment, loin de la hype</h3>
+            </a>
+            <div class="VwiC3b">Enquête sur les usages réels et les promesses non tenues
+              des modèles génératifs.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
