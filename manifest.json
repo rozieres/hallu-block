@@ -11,7 +11,7 @@
     "128": "src/assets/icons/128.png"
   },
 
-  "permissions": ["storage"],
+  "permissions": ["storage", "declarativeNetRequest"],
 
   "host_permissions": [
     "*://*.google.com/*",
@@ -51,6 +51,12 @@
       "run_at": "document_start"
     }
   ],
+
+  "declarative_net_request": {
+    "rule_resources": [
+      { "id": "udm14", "enabled": false, "path": "src/rules/dnr/udm14.json" }
+    ]
+  },
 
   "browser_specific_settings": {
     "gecko": {
