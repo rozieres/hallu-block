@@ -1,0 +1,78 @@
+{
+  "store_short_desc": {
+    "message": "Masque les résumés IA de Google & cie. L'IA quand vous la demandez, pas imposée par défaut. Gratuite, open source, anonyme."
+  },
+  "icon_tooltip": {
+    "message": "Hallu Block — désactivez l'IA qu'on vous impose."
+  },
+  "tagline": {
+    "message": "L'IA seulement quand vous la demandez."
+  },
+
+  "counter_label": {
+    "message": "résumés & widgets IA écartés cette semaine"
+  },
+  "counter_since_install": {
+    "message": "$count$ depuis l'installation",
+    "placeholders": {
+      "count": { "content": "$1", "example": "1 203" }
+    }
+  },
+
+  "group_google": { "message": "Google" },
+  "group_other": { "message": "Autres sites & plateformes" },
+  "group_display": { "message": "Affichage" },
+
+  "toggle_google_overview_label": { "message": "Résumés IA de Google" },
+  "toggle_google_overview_sub": { "message": "Le pavé que Google pose en haut des résultats (AI Overviews)." },
+
+  "toggle_google_aimode_label": { "message": "Mode IA de Google" },
+  "toggle_google_aimode_sub": { "message": "Un panneau entier qui discute avec vous plutôt que de vous lister des liens." },
+
+  "toggle_slop_label": { "message": "Filtre anti-slop IA" },
+  "toggle_slop_sub": { "message": "Écarte des résultats les sites aux contenus générés par IA." },
+  "slop_list_link": { "message": "Liste communautaire →" },
+
+  "toggle_bing_label": { "message": "Réponses IA de Bing" },
+  "toggle_bing_sub": { "message": "Copilot qui s'invite dans vos recherches." },
+
+  "toggle_ddg_label": { "message": "Assistant IA de DuckDuckGo" },
+  "toggle_ddg_sub": { "message": "Le résumé IA en haut des résultats." },
+
+  "toggle_youtube_label": { "message": "Bouton \"Ask\" de YouTube" },
+  "toggle_youtube_sub": { "message": "Le résumé IA des vidéos." },
+
+  "toggle_amazon_label": { "message": "Résumés d'avis d'Amazon (Rufus)" },
+  "toggle_amazon_sub": { "message": "L'IA qui résume des avis clients." },
+
+  "toggle_show_blocks_label": { "message": "Voir les blocs d'IA évités" },
+  "toggle_show_blocks_sub": { "message": "Une petite étiquette à la place du contenu masqué." },
+
+  "radical_kicker": { "message": "Alternative radicale" },
+  "radical_button": { "message": "Mode Google classique" },
+  "radical_sub": { "message": "Les 10 liens, sans rien d'autre. Zéro IA… mais zéro météo, carte ou calculatrice non plus." },
+
+  "foot_brand": {
+    "message": "Extension réalisée par Hallu World, la newsletter fascinée par l'IA, consternée par ce qu'on en fait →"
+  },
+  "foot_brand_name": { "message": "Hallu World" },
+  "foot_about": { "message": "À propos →" },
+  "foot_privacy": { "message": "Aucune donnée ne sort de votre navigateur." },
+
+  "annot_generic": { "message": "Contenu IA masqué par Hallu Block" },
+  "annot_google_overview": { "message": "Résumé IA de Google masqué par Hallu Block" },
+  "annot_google_aimode": { "message": "Mode IA de Google masqué par Hallu Block" },
+  "annot_slop": { "message": "Résultat écarté : site signalé \"contenu IA\" par la liste communautaire" },
+  "annot_show": { "message": "afficher" },
+  "annot_hide": { "message": "masquer" },
+  "annot_why": { "message": "pourquoi ?" },
+
+  "onboard_title": { "message": "Choisissez les contenus IA à masquer" },
+  "onboard_body": { "message": "Hallu Block masque l'IA que les sites vous collent sans demander : résumés de Google, boutons un peu partout, sites 100% IA générative, etc. On a déjà activé l'essentiel. Tout est réglable d'un clic : vous gardez ce qui vous va, vous coupez le reste. Rien ne sort de votre navigateur. On ne vous suit pas, on ne vend rien, on ne récolte rien." },
+  "onboard_button": { "message": "C'est parti" },
+  "onboard_secondary": { "message": "Qui est derrière ? → Hallu World" },
+
+  "state_nothing": { "message": "Rien à signaler ici. Profitez du calme." },
+  "state_error_google": { "message": "Google a encore bidouillé sa mise en page : ce filtre rate peut-être des éléments, on regarde. En attendant, le mode Google classique (toujours fiable) reste dispo." },
+  "state_all_off": { "message": "Tous les filtres sont coupés. Hallu Block ne fait rien pour l'instant." }
+}

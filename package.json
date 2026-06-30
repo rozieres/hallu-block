@@ -1,0 +1,24 @@
+{
+  "name": "hallu-block",
+  "version": "0.1.0",
+  "description": "Browser extension that hides the AI forced on you by default. A free tool by Hallu World.",
+  "private": true,
+  "license": "MIT",
+  "homepage": "https://github.com/rozieres/hallu-block",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rozieres/hallu-block.git"
+  },
+  "scripts": {
+    "lint": "web-ext lint --source-dir=.",
+    "start:firefox": "web-ext run",
+    "build": "web-ext build --overwrite-dest",
+    "test": "playwright test",
+    "vendor:polyfill": "cp node_modules/webextension-polyfill/dist/browser-polyfill.min.js src/lib/browser-polyfill.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "web-ext": "^8.3.0",
+    "webextension-polyfill": "0.12.0"
+  }
+}

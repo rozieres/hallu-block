@@ -1,0 +1,62 @@
+{
+  "manifest_version": 3,
+  "name": "Hallu Block",
+  "version": "0.1.0",
+  "default_locale": "fr",
+  "description": "__MSG_store_short_desc__",
+
+  "icons": {
+    "16": "src/assets/icons/16.png",
+    "48": "src/assets/icons/48.png",
+    "128": "src/assets/icons/128.png"
+  },
+
+  "permissions": ["storage"],
+
+  "host_permissions": [
+    "*://*.google.com/*",
+    "*://*.google.fr/*",
+    "*://*.google.be/*",
+    "*://*.google.ch/*",
+    "*://*.google.ca/*"
+  ],
+
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_title": "__MSG_icon_tooltip__",
+    "default_icon": {
+      "16": "src/assets/icons/16.png",
+      "32": "src/assets/icons/32.png",
+      "48": "src/assets/icons/48.png",
+      "128": "src/assets/icons/128.png"
+    }
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.google.com/search*",
+        "*://*.google.fr/search*",
+        "*://*.google.be/search*",
+        "*://*.google.ch/search*",
+        "*://*.google.ca/search*"
+      ],
+      "css": ["src/content/baseline-google.css", "src/content/annotate.css"],
+      "js": ["src/lib/browser-polyfill.js", "src/content/engine.js"],
+      "run_at": "document_start"
+    }
+  ],
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "hallu-block@halluworld.fr",
+      "strict_min_version": "128.0",
+      "data_collection_permissions": { "required": ["none"] }
+    }
+  }
+}

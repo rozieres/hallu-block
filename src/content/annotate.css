@@ -1,0 +1,43 @@
+/* Hallu Block — in-page annotation bar (the discreet trace left where an AI
+   block was hidden). One terminal-style line led by the green ▌ block cursor,
+   matching the wordmark. System mono only — no bundled font needed in-page.
+   Heavy use of !important to resist the host page's own styles. */
+
+.hb-annot {
+  display: flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  background: #F7F3E8 !important;
+  border: 1.5px solid #1C2333 !important;
+  border-radius: 0 !important;
+  padding: 8px 11px !important;
+  margin: 8px 0 !important;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace !important;
+  font-size: 12.5px !important;
+  line-height: 1.4 !important;
+  color: #1C2333 !important;
+  box-shadow: none !important;
+  max-width: 100% !important;
+}
+
+.hb-annot .hb-annot-blk {
+  color: #319d43 !important;
+  font-size: 15px !important;
+  letter-spacing: -2px !important;
+  flex: 0 0 auto !important;
+}
+
+.hb-annot .hb-annot-label { color: #1C2333 !important; }
+.hb-annot .hb-annot-sep { color: #bdb6a2 !important; }
+
+.hb-annot .hb-annot-link {
+  color: #319d43 !important;
+  text-decoration: none !important;
+  border-bottom: 1px solid #319d43 !important;
+  cursor: pointer !important;
+  background: none !important;
+}
+.hb-annot .hb-annot-link.hb-annot-why {
+  color: #6f6a5d !important;
+  border-bottom-color: #bdb6a2 !important;
+}

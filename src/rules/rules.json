@@ -1,0 +1,23 @@
+{
+  "version": "2026.06.30",
+  "hide": [
+    {
+      "id": "google-ai-overview",
+      "hosts": ["google.com", "google.fr", "google.be", "google.ch", "google.ca"],
+      "path": "/search",
+      "selectors": [
+        "div[data-async-type=\"folsrch\"]",
+        "div[data-async-type=\"aiOverview\"]",
+        "div[aria-label=\"AI Overview\"]",
+        "div[data-attrid=\"AIOverview\"]"
+      ],
+      "textHeadings": ["AI Overview", "AI Overviews", "Aperçu IA", "Aperçus IA"],
+      "ancestorSelectors": [
+        "div[data-mcpr]",
+        "div[data-async-type=\"folsrch\"]",
+        "div[data-async-type=\"aiOverview\"]"
+      ],
+      "annotateKey": "annot_google_overview"
+    }
+  ]
+}
