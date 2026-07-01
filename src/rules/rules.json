@@ -36,7 +36,7 @@
   "slopFilter": {
     "id": "anti-slop",
     "hosts": ["google.com", "google.fr", "google.be", "google.ch", "google.ca", "bing.com", "duckduckgo.com"],
-    "resultSelector": "#rso div.g, #b_results > li.b_algo, .react-results--main article, ol.react-results--main > li",
+    "resultSelector": "#rso div.g, #b_results > li.b_algo, article[data-testid=\"result\"]",
     "domainLink": "a[href]",
     "annotateKey": "annot_slop",
     "listName": "uBlockOrigin-AI-Blocklist",

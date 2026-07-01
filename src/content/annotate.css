@@ -1,7 +1,15 @@
 /* Hallu Block — in-page annotation bar (the discreet trace left where an AI
    block was hidden). One terminal-style line led by the green ▌ block cursor,
    matching the wordmark. System mono only — no bundled font needed in-page.
-   Heavy use of !important to resist the host page's own styles. */
+   Heavy use of !important to resist the host page's own styles.
+
+   This stylesheet is injected wherever the engine runs (every content script),
+   so it also carries the engine-applied hide class — the one rule every site
+   needs. Site-specific anti-flicker (e.g. baseline-google.css) is separate. */
+
+.hb-hidden {
+  display: none !important;
+}
 
 .hb-annot {
   display: flex !important;

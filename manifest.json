@@ -18,7 +18,8 @@
     "*://*.google.fr/*",
     "*://*.google.be/*",
     "*://*.google.ch/*",
-    "*://*.google.ca/*"
+    "*://*.google.ca/*",
+    "*://*.duckduckgo.com/*"
   ],
 
   "background": {
@@ -49,12 +50,19 @@
       "css": ["src/content/baseline-google.css", "src/content/annotate.css"],
       "js": ["src/lib/browser-polyfill.js", "src/content/engine.js"],
       "run_at": "document_start"
+    },
+    {
+      "matches": ["*://*.duckduckgo.com/*"],
+      "css": ["src/content/annotate.css"],
+      "js": ["src/lib/browser-polyfill.js", "src/content/engine.js"],
+      "run_at": "document_idle"
     }
   ],
 
   "declarative_net_request": {
     "rule_resources": [
-      { "id": "udm14", "enabled": false, "path": "src/rules/dnr/udm14.json" }
+      { "id": "udm14", "enabled": false, "path": "src/rules/dnr/udm14.json" },
+      { "id": "ddg", "enabled": true, "path": "src/rules/dnr/ddg.json" }
     ]
   },
 

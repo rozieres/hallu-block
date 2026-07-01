@@ -245,6 +245,28 @@ test("anti-slop toggle OFF → no result is filtered", async () => {
   await expect(page.locator(".hb-annot")).toHaveCount(0);
 });
 
+test("anti-slop on DuckDuckGo: unwraps /l/?uddg= redirect to catch the slop result", async () => {
+  const { errors } = await mount({
+    file: "ddg-slop.html",
+    url: "https://duckduckgo.com/?q=meilleurs+outils",
+    toggles: { ...DEFAULT_TOGGLES, "anti-slop": true },
+    slopDomains: SLOP,
+  });
+
+  // The slop link's raw host is duckduckgo.com; only after unwrapping uddg= does
+  // it resolve to slopfarm.ai and get filtered.
+  const blocked = page.locator('article[data-testid="result"]:has(a[href*="uddg="])');
+  await expect(blocked).toHaveCount(1);
+  await expect(blocked).toBeHidden();
+
+  await expect(page.locator('article[data-testid="result"]:has(a[href*="cnil.fr"])')).toBeVisible();
+
+  const annot = page.locator(".hb-annot");
+  await expect(annot).toHaveCount(1);
+  await expect(annot).toContainText(MESSAGES.annot_slop);
+  expect(errors).toEqual([]);
+});
+
 test("bundled anti-slop blocklist is well-formed hosts data", () => {
   const raw = read("src/rules/slop/noai_hosts.txt");
   const hostLines = raw

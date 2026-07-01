@@ -180,30 +180,60 @@ test("radical button toggles udm=14, persists it, and messages the worker", asyn
 
   const written = await sets();
   expect(written[written.length - 1].toggles.udm14).toBe(true);
-  expect(await msgs()).toContainEqual({ type: "hb-set-udm14", value: true });
+  expect(await msgs()).toContainEqual({ type: "hb-set-dnr", feature: "udm14", value: true });
 });
 
-test("udm=14 DNR ruleset has a valid, loop-safe shape and is registered disabled", () => {
-  const dnr = JSON.parse(read("src/rules/dnr/udm14.json"));
-  expect(Array.isArray(dnr)).toBe(true);
-  expect(dnr).toHaveLength(1);
+test("DuckDuckGo switch persists AND drives its DNR ruleset via the worker", async () => {
+  await mountPopup(); // defaults: ddg-assist on
+  await ready();
 
-  const rule = dnr[0];
-  expect(Number.isInteger(rule.id)).toBe(true);
-  expect(rule.action.type).toBe("redirect");
-  expect(rule.action.redirect.transform.queryTransform.addOrReplaceParams).toEqual([
-    { key: "udm", value: "14" },
-  ]);
-  expect(rule.condition.resourceTypes).toContain("main_frame");
-  expect(typeof rule.condition.regexFilter).toBe("string");
-  // DNR's regex engine is RE2 — no lookarounds. Guard against an accidental (?=…).
-  expect(rule.condition.regexFilter).not.toMatch(/\(\?/);
+  const ddg = page.locator('li[data-feature="ddg-assist"]');
+  await expect(ddg).toHaveClass(ON);
 
-  // The manifest must register the ruleset, disabled by default, with the perm.
-  const mf = JSON.parse(read("manifest.json"));
-  expect(mf.permissions).toContain("declarativeNetRequest");
-  const rs = (mf.declarative_net_request.rule_resources || []).find((r) => r.id === "udm14");
-  expect(rs).toBeTruthy();
-  expect(rs.enabled).toBe(false);
-  expect(rs.path).toBe("src/rules/dnr/udm14.json");
+  await ddg.click(); // turn it off
+
+  await expect(ddg).not.toHaveClass(ON);
+  const written = await sets();
+  expect(written[written.length - 1].toggles["ddg-assist"]).toBe(false);
+  // A list switch that is DNR-backed must also flip the ruleset.
+  expect(await msgs()).toContainEqual({ type: "hb-set-dnr", feature: "ddg-assist", value: false });
 });
+
+test("a non-DNR switch does NOT message the worker", async () => {
+  await mountPopup();
+  await ready();
+
+  await page.locator('li[data-feature="youtube-ask"]').click();
+  expect(await msgs()).toEqual([]); // only storage was written, no ruleset call
+});
+
+// Both family-A rulesets: valid, loop-safe shape + correctly registered.
+const REDIRECT_RULESETS = [
+  { file: "src/rules/dnr/udm14.json", id: "udm14", param: { key: "udm", value: "14" }, enabled: false },
+  { file: "src/rules/dnr/ddg.json", id: "ddg", param: { key: "noai", value: "1" }, enabled: true },
+];
+
+for (const rs of REDIRECT_RULESETS) {
+  test(`DNR ruleset ${rs.id} has a valid, loop-safe shape and is registered`, () => {
+    const dnr = JSON.parse(read(rs.file));
+    expect(Array.isArray(dnr)).toBe(true);
+    expect(dnr).toHaveLength(1);
+
+    const rule = dnr[0];
+    expect(Number.isInteger(rule.id)).toBe(true);
+    expect(rule.action.type).toBe("redirect");
+    expect(rule.action.redirect.transform.queryTransform.addOrReplaceParams).toEqual([rs.param]);
+    expect(rule.condition.resourceTypes).toContain("main_frame");
+    expect(typeof rule.condition.regexFilter).toBe("string");
+    // DNR's regex engine is RE2 — no lookarounds. Guard against an accidental (?=…).
+    expect(rule.condition.regexFilter).not.toMatch(/\(\?/);
+
+    // The manifest must register the ruleset with the expected default state.
+    const mf = JSON.parse(read("manifest.json"));
+    expect(mf.permissions).toContain("declarativeNetRequest");
+    const reg = (mf.declarative_net_request.rule_resources || []).find((r) => r.id === rs.id);
+    expect(reg).toBeTruthy();
+    expect(reg.enabled).toBe(rs.enabled);
+    expect(reg.path).toBe(rs.file);
+  });
+}
