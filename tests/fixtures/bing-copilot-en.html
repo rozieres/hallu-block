@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<!--
+  Hallu Block E2E fixture — bing.com/search with the Copilot answer block.
+  What matters: the AI answer lives in #copans_container (inside li.b_ans), the
+  answer_container carries aria-label="Copilot Search", and a separate
+  #b_copilot_search_container holds the follow-up chat at the bottom. Both must
+  be hidden; the organic .b_algo results must survive.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>best productivity apps - Search</title>
+</head>
+<body>
+  <div id="b_content">
+    <main aria-label="Search Results">
+      <ol id="b_results">
+
+        <li class="b_ans b_top">
+          <div id="copans_container" class="cico_abc">
+            <div class="answer_container" aria-label="Copilot Search">
+              <div class="copans_ttl">Copilot</div>
+              <h2>Best productivity apps</h2>
+              <p>Here's an AI-generated overview of the best productivity apps…</p>
+            </div>
+          </div>
+        </li>
+
+        <li class="b_algo">
+          <h2><a href="https://www.cnil.fr/intelligence-artificielle">CNIL — Intelligence artificielle</a></h2>
+          <div class="b_caption"><cite>https://www.cnil.fr › ia</cite><p>Real organic result.</p></div>
+        </li>
+
+        <li class="b_algo">
+          <h2><a href="https://www.lemonde.fr/pixels/ia">Le Monde — IA</a></h2>
+          <div class="b_caption"><cite>lemonde.fr › pixels</cite><p>Another real result.</p></div>
+        </li>
+
+      </ol>
+
+      <div id="b_copilot_search_container" class="serpmultiturn">
+        <label>Ask a follow-up</label>
+        <textarea placeholder="Ask a follow-up"></textarea>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

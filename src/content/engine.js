@@ -158,6 +158,75 @@
     };
   }
 
+  // --- Anti-slop (family C): filter SERP results by community domain blocklist -
+  const bareHost = (h) => (h || "").replace(/^www\./, "").toLowerCase();
+
+  function fromBase64Url(s) {
+    try {
+      let b = s.replace(/-/g, "+").replace(/_/g, "/");
+      while (b.length % 4) b += "=";
+      return atob(b);
+    } catch (_) {
+      return "";
+    }
+  }
+
+  // Resolve a result link to its REAL destination, unwrapping the redirectors the
+  // engines wrap results in (DDG /l/?uddg=, Bing /ck/a?u=a1<b64>, generic ?url=).
+  function realHref(a) {
+    let u;
+    try {
+      u = new URL(a.getAttribute("href") || "", location.href);
+    } catch (_) {
+      return "";
+    }
+    const h = bareHost(u.hostname);
+    if (h.endsWith("duckduckgo.com") && u.searchParams.has("uddg")) {
+      return u.searchParams.get("uddg") || "";
+    }
+    if (h.endsWith("bing.com") && u.searchParams.has("u")) {
+      const raw = u.searchParams.get("u") || "";
+      const dec = fromBase64Url(raw.startsWith("a1") ? raw.slice(2) : raw);
+      if (/^https?:\/\//i.test(dec)) return dec;
+    }
+    for (const k of ["url", "q"]) {
+      const v = u.searchParams.get(k);
+      if (v && /^https?:\/\//i.test(v)) return v;
+    }
+    return u.href;
+  }
+
+  // The destination host of a result: first link that resolves to a host other
+  // than the SERP itself; falls back to the displayed <cite> URL.
+  function resultHost(resultEl, serpHost) {
+    for (const a of resultEl.querySelectorAll("a[href]")) {
+      let host;
+      try {
+        host = bareHost(new URL(realHref(a), location.href).hostname);
+      } catch (_) {
+        continue;
+      }
+      if (host && host !== serpHost && !host.endsWith("." + serpHost)) return host;
+    }
+    const cite = resultEl.querySelector("cite");
+    if (cite) {
+      const m = (cite.textContent || "").match(/([a-z0-9-]+\.)+[a-z]{2,}/i);
+      if (m) return bareHost(m[0]);
+    }
+    return "";
+  }
+
+  // True if `host` or any of its parent domains is on the blocklist (so a hit on
+  // "example.ai" also blocks "blog.example.ai").
+  function isBlocked(host, set) {
+    if (!host) return false;
+    const parts = host.split(".");
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (set.has(parts.slice(i).join("."))) return true;
+    }
+    return false;
+  }
+
   // --- Execution ------------------------------------------------------------
   let state;
   try {
@@ -171,19 +240,57 @@
   const host = location.hostname.replace(/^www\./, "");
   const path = location.pathname;
 
+  const hostMatch = (hosts) =>
+    Array.isArray(hosts) && hosts.some((h) => host === h || host.endsWith("." + h));
+
   const activeRules = (rules.hide || []).filter(
-    (r) =>
-      Array.isArray(r.hosts) &&
-      r.hosts.some((h) => host === h || host.endsWith("." + h)) &&
-      (!r.path || path.startsWith(r.path))
+    (r) => hostMatch(r.hosts) && (!r.path || path.startsWith(r.path))
   );
-  if (!activeRules.length) return;
+
+  // Anti-slop (family C) applies independently of the hide rules — some SERPs
+  // (e.g. DuckDuckGo) get result filtering but no in-page masking.
+  const slop = rules.slopFilter;
+  const slopActive = !!slop && toggles[slop.id] !== false && hostMatch(slop.hosts);
+
+  if (!activeRules.length && !slopActive) return;
 
   const showBlocks = toggles["show-blocks"] !== false; // default on
 
   // Features toggled OFF: release the anti-flicker baseline (page-wide marker).
   for (const r of activeRules) {
     if (toggles[r.id] === false) showFeature(r.id);
+  }
+
+  // Fetch the blocklist once (kept out of getState so only slop pages pay for it).
+  let slopSet = null;
+  if (slopActive) {
+    try {
+      const resp = await api.runtime.sendMessage({ type: "hb-get-slop" });
+      if (resp && Array.isArray(resp.domains)) slopSet = new Set(resp.domains);
+    } catch (_) {
+      /* couldn't load the list — skip filtering, never break the page */
+    }
+  }
+
+  function filterSlop() {
+    let nodes;
+    try {
+      nodes = document.querySelectorAll(slop.resultSelector);
+    } catch (_) {
+      return; // unsupported selector — skip
+    }
+    for (const res of nodes) {
+      if (res.dataset.hbDone || res.dataset.hbSlopSeen) continue;
+      const target = resultHost(res, host);
+      if (!target) continue; // link not resolvable yet — re-check on next pass
+      if (isBlocked(target, slopSet)) {
+        if (hideAndAnnotate(res, { id: slop.id, annotateKey: slop.annotateKey }, showBlocks)) {
+          api.runtime.sendMessage({ type: "hb-bump", feature: slop.id }).catch(() => {});
+        }
+      } else {
+        res.dataset.hbSlopSeen = "1"; // resolved & clean — don't re-scan it
+      }
+    }
   }
 
   function apply() {
@@ -195,11 +302,12 @@
         }
       }
     }
+    if (slopSet && slopSet.size) filterSlop();
   }
 
   apply(); // initial sweep
   const obs = new MutationObserver(debounce(apply, 80));
   obs.observe(document.documentElement, { childList: true, subtree: true });
-  // Timed re-scans: the AI Overview populates async, well after first paint.
+  // Timed re-scans: AI Overviews populate async, and results hydrate / paginate.
   for (const t of [500, 1000, 2000, 3500, 6000]) setTimeout(apply, t);
 })();

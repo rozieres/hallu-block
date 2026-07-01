@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<!--
+  Hallu Block E2E fixture — DuckDuckGo SERP with an AI-slop result.
+  DDG often wraps result links in a redirector: //duckduckgo.com/l/?uddg=<encoded
+  destination>. This fixture uses that form for the slop result specifically, to
+  exercise the engine's realHref() unwrapping (the raw link host is duckduckgo.com;
+  the real destination is slopfarm.ai). The clean result uses a direct href.
+-->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>meilleurs outils at DuckDuckGo</title>
+</head>
+<body>
+  <div class="react-results--main-wrap">
+    <ol class="react-results--main">
+
+      <li>
+        <article data-testid="result">
+          <div>
+            <a data-testid="result-title-a" href="https://www.cnil.fr/intelligence-artificielle">
+              <span>CNIL — Intelligence artificielle</span>
+            </a>
+          </div>
+          <div><span>Le point sur les enjeux de l'IA générative.</span></div>
+        </article>
+      </li>
+
+      <li>
+        <article data-testid="result">
+          <div>
+            <a data-testid="result-title-a"
+               href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fslopfarm.ai%2Ftop-50-ai-tools&rut=deadbeef">
+              <span>Top 50 AI Tools Ranked</span>
+            </a>
+          </div>
+          <div><span>Auto-generated listicle.</span></div>
+        </article>
+      </li>
+
+    </ol>
+  </div>
+</body>
+</html>

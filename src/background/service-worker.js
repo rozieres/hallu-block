@@ -36,27 +36,53 @@ async function getState() {
   return { rules, toggles: { ...DEFAULT_TOGGLES, ...(toggles || {}) } };
 }
 
-// ---- declarativeNetRequest: "Mode Google classique" (udm=14) -----------------
-// Family A — a static ruleset (declared disabled in the manifest) that rewrites
-// google.*/search URLs to add udm=14. We only flip it on/off; the rule itself
-// lives in src/rules/dnr/udm14.json. Enabled state persists across restarts on
-// its own, but we reconcile it to the stored toggle defensively (see below).
-const DNR_UDM14 = "udm14";
+// ---- Anti-slop blocklist (family C) ------------------------------------------
+// A community CC0 hosts file (`0.0.0.0 domain` per line, # comments) bundled as a
+// snapshot; remote refresh is a later milestone (like rules.json). Parsed once,
+// then handed to the content script on demand — the raw ~4k-line file never
+// crosses into the page, only the domain array does. Kept out of getState so
+// pages with anti-slop off (or non-search pages) don't pay for it.
+let slopCache = null;
+async function getSlopDomains() {
+  if (slopCache) return slopCache;
+  const res = await fetch(browser.runtime.getURL("src/rules/slop/noai_hosts.txt"));
+  const text = await res.text();
+  const domains = [];
+  for (const line of text.split("\n")) {
+    const s = line.trim();
+    if (!s || s[0] === "#") continue;
+    const parts = s.split(/\s+/);
+    const d = (parts.length > 1 ? parts[1] : parts[0]).toLowerCase();
+    if (d && d.includes(".")) domains.push(d);
+  }
+  slopCache = domains;
+  return domains;
+}
 
-async function setUdm14(enabled) {
+// ---- declarativeNetRequest: family-A URL rewrites ----------------------------
+// Static rulesets (declared in the manifest) that rewrite a URL rather than
+// touch the DOM — incassable when the site changes its markup. Each is driven
+// by one toggle: udm14 = "Mode Google classique" (default off, opt-in via the
+// radical button); ddg = DuckDuckGo's noai=1 (default on). We only flip them.
+const DNR_RULESETS = { udm14: "udm14", "ddg-assist": "ddg" }; // toggle key -> ruleset id
+
+async function setRuleset(rulesetId, enabled) {
   const dnr = browser.declarativeNetRequest;
   if (!dnr || !dnr.updateEnabledRulesets) return; // Firefox/older builds: no-op
   await dnr.updateEnabledRulesets(
-    enabled ? { enableRulesetIds: [DNR_UDM14] } : { disableRulesetIds: [DNR_UDM14] }
+    enabled ? { enableRulesetIds: [rulesetId] } : { disableRulesetIds: [rulesetId] }
   );
 }
 
-// Bring the live ruleset in line with the persisted toggle. Chrome remembers the
-// enabled set across sessions, so this is belt-and-suspenders against a storage/
-// DNR desync (e.g. storage cleared, or a toggle written while the SW was asleep).
-async function syncUdm14() {
+// Bring every DNR ruleset in line with its persisted toggle. Chrome remembers
+// the enabled set across sessions, so this is belt-and-suspenders against a
+// storage/DNR desync (e.g. storage cleared, or a toggle flipped while asleep).
+async function syncDnr() {
   const { toggles } = await browser.storage.local.get("toggles");
-  await setUdm14(!!(toggles && toggles.udm14)).catch(() => {});
+  const t = { ...DEFAULT_TOGGLES, ...(toggles || {}) };
+  for (const [key, ruleset] of Object.entries(DNR_RULESETS)) {
+    await setRuleset(ruleset, !!t[key]).catch(() => {});
+  }
 }
 
 // ---- Local counter -----------------------------------------------------------
@@ -95,13 +121,16 @@ async function doBump() {
 browser.runtime.onMessage.addListener((msg) => {
   if (!msg || typeof msg !== "object") return;
   if (msg.type === "hb-get-state") return getState();
+  if (msg.type === "hb-get-slop") return getSlopDomains().then((domains) => ({ domains }));
   if (msg.type === "hb-bump") {
     bump();
     return Promise.resolve({ ok: true });
   }
-  // The popup persists the udm14 toggle itself; this only drives the ruleset.
-  if (msg.type === "hb-set-udm14") {
-    return setUdm14(!!msg.value)
+  // The popup persists the toggle itself; this only drives the DNR ruleset.
+  if (msg.type === "hb-set-dnr") {
+    const ruleset = DNR_RULESETS[msg.feature];
+    if (!ruleset) return Promise.resolve({ ok: false, error: "unknown ruleset" });
+    return setRuleset(ruleset, !!msg.value)
       .then(() => ({ ok: true }))
       .catch((e) => ({ ok: false, error: String(e) }));
   }
@@ -111,10 +140,10 @@ browser.runtime.onMessage.addListener((msg) => {
 browser.runtime.onInstalled.addListener(async () => {
   const { toggles } = await browser.storage.local.get("toggles");
   if (!toggles) await browser.storage.local.set({ toggles: DEFAULT_TOGGLES });
-  await syncUdm14();
+  await syncDnr();
 });
 
-// Reconcile the DNR ruleset with the stored toggle each time the worker spins up.
+// Reconcile the DNR rulesets with their stored toggles each worker spin-up.
 browser.runtime.onStartup?.addListener(() => {
-  syncUdm14();
+  syncDnr();
 });

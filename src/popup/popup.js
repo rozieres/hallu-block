@@ -130,6 +130,17 @@ function renderToggleState() {
   if (radical) paintRadical(radical, !!toggles.udm14);
 }
 
+// Toggles backed by a declarativeNetRequest ruleset (family A): flipping the
+// switch also flips the live ruleset via the service worker (which owns it).
+const DNR_FEATURES = new Set(["udm14", "ddg-assist"]);
+
+function notifyDnr(feature, value) {
+  // Worker asleep/unreachable is fine — it reconciles from storage on next wake.
+  browser.runtime
+    .sendMessage({ type: "hb-set-dnr", feature, value })
+    .catch(() => {});
+}
+
 function wireToggles() {
   for (const li of document.querySelectorAll("li[data-feature]")) {
     const feature = li.dataset.feature;
@@ -140,6 +151,7 @@ function wireToggles() {
       toggles[feature] = !toggles[feature];
       paintLi(li, toggles[feature]);
       saveToggles();
+      if (DNR_FEATURES.has(feature)) notifyDnr(feature, toggles[feature]);
     });
   }
 
@@ -149,12 +161,7 @@ function wireToggles() {
       toggles.udm14 = !toggles.udm14;
       paintRadical(radical, toggles.udm14);
       await saveToggles();
-      // The service worker owns the live ruleset; tell it to flip.
-      try {
-        await browser.runtime.sendMessage({ type: "hb-set-udm14", value: toggles.udm14 });
-      } catch (_) {
-        /* worker asleep/unreachable — it reconciles from storage on next wake */
-      }
+      notifyDnr("udm14", toggles.udm14);
     });
   }
 }
