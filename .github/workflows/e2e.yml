@@ -1,0 +1,35 @@
+name: e2e
+
+# Deterministic suite (engine + popup, on fixtures). Green is required to merge.
+# The packaged-extension e2e.spec tests auto-skip where CLI extension loading is
+# blocked (modern Chrome) — engine.spec/popup.spec cover the same logic.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # The suite launches real Google Chrome (channel: "chrome") headful, so we
+      # install Chrome + system deps and run it under a virtual framebuffer.
+      - run: npx playwright install --with-deps chrome
+
+      - run: xvfb-run -a npm test
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 7

@@ -11,9 +11,10 @@
     "128": "src/assets/icons/128.png"
   },
 
-  "permissions": ["storage", "declarativeNetRequest"],
+  "permissions": ["storage", "declarativeNetRequest", "alarms"],
 
   "host_permissions": [
+    "https://rozieres.github.io/*",
     "*://*.google.com/*",
     "*://*.google.fr/*",
     "*://*.google.be/*",
