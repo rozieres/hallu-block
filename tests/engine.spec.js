@@ -31,6 +31,8 @@ const DEFAULT_TOGGLES = {
   "show-blocks": true,
 };
 
+const AI_MODE_TAB = '[role="listitem"]:has(a[href*="udm=50"])';
+
 let browser, context, page;
 
 test.beforeAll(async () => {
@@ -157,4 +159,42 @@ test("page without AI → engine does nothing, no errors, no count", async () =>
   await page.waitForTimeout(800);
   expect(await page.evaluate(() => window.__hbBumps)).toBe(0);
   expect(errors).toEqual([]);
+});
+
+test("AI Mode tab is hidden, annotated, counted; siblings & results untouched", async () => {
+  const { errors } = await mount({
+    file: "google-ai-mode-fr.html",
+    url: "https://www.google.fr/search?q=intelligence+artificielle&hl=fr",
+  });
+
+  // Only the udm=50 tab is hidden…
+  await expect(page.locator(AI_MODE_TAB)).toBeHidden();
+
+  // …with the localized AI-Mode annotation (not the AI-Overview one).
+  const annot = page.locator(".hb-annot");
+  await expect(annot).toBeVisible();
+  await expect(annot).toContainText(MESSAGES.annot_google_aimode);
+  await expect(annot.locator(".hb-annot-blk")).toHaveText("▌");
+
+  // Sibling tabs (Images = udm=2) and all five listitems remain in the DOM.
+  await expect(page.locator('[role="listitem"]:has(a[href*="udm=2"])')).toBeVisible();
+  await expect(page.locator('[role="listitem"]')).toHaveCount(5);
+
+  // Organic results untouched.
+  await expect(page.locator("#rso .g")).toHaveCount(2);
+  await expect(page.locator("#rso .g").first()).toBeVisible();
+
+  await expect.poll(() => page.evaluate(() => window.__hbBumps)).toBeGreaterThanOrEqual(1);
+  expect(errors).toEqual([]);
+});
+
+test("AI Mode toggle OFF → tab stays visible, no annotation", async () => {
+  await mount({
+    file: "google-ai-mode-fr.html",
+    url: "https://www.google.fr/search?q=ia&hl=fr",
+    toggles: { ...DEFAULT_TOGGLES, "google-ai-mode": false },
+  });
+
+  await expect(page.locator(AI_MODE_TAB)).toBeVisible();
+  await expect(page.locator(".hb-annot")).toHaveCount(0);
 });

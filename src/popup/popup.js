@@ -73,5 +73,98 @@ async function renderCounter() {
   document.querySelector(".num-sub").textContent = t("counter_since_install", [fmt.format(total)]);
 }
 
-applyI18n();
-renderCounter();
+// ---- Switches ----------------------------------------------------------------
+// Must mirror the service worker's defaults exactly: this is the state shown
+// before the user touches anything, and on a fresh profile storage is empty.
+const DEFAULT_TOGGLES = {
+  "google-ai-overview": true,
+  "google-ai-mode": true,
+  "anti-slop": true,
+  "ddg-assist": true,
+  "youtube-ask": true,
+  "amazon-rufus": true,
+  "bing-copilot": false,
+  "show-blocks": true,
+  udm14: false,
+};
+
+let toggles = { ...DEFAULT_TOGGLES };
+
+async function loadToggles() {
+  try {
+    const stored = await browser.storage.local.get("toggles");
+    toggles = { ...DEFAULT_TOGGLES, ...(stored.toggles || {}) };
+  } catch (_) {
+    // storage unavailable — keep defaults so the UI still renders.
+  }
+}
+
+async function saveToggles() {
+  try {
+    await browser.storage.local.set({ toggles });
+  } catch (_) {
+    /* best-effort; the popup stays in its in-memory state regardless */
+  }
+}
+
+// Paint a list switch: the .on class drives the CSS colour, the glyph the ASCII
+// look ([█] on / [ ] off) from the mockup.
+function paintLi(li, on) {
+  li.classList.toggle("on", on);
+  const check = li.querySelector(".check");
+  if (check) check.textContent = on ? "[█]" : "[ ]";
+}
+
+// The radical button is all-or-nothing (DNR), not a list switch: invert its
+// colours when engaged so it reads as a pressed state.
+function paintRadical(btn, on) {
+  btn.classList.toggle("on", on);
+  btn.setAttribute("aria-pressed", String(on));
+}
+
+function renderToggleState() {
+  for (const li of document.querySelectorAll("li[data-feature]")) {
+    paintLi(li, !!toggles[li.dataset.feature]);
+  }
+  const radical = document.querySelector('button[data-feature="udm14"]');
+  if (radical) paintRadical(radical, !!toggles.udm14);
+}
+
+function wireToggles() {
+  for (const li of document.querySelectorAll("li[data-feature]")) {
+    const feature = li.dataset.feature;
+    li.style.cursor = "pointer";
+    li.addEventListener("click", (e) => {
+      // Let the embedded "community list" link work without flipping the switch.
+      if (e.target.closest("a")) return;
+      toggles[feature] = !toggles[feature];
+      paintLi(li, toggles[feature]);
+      saveToggles();
+    });
+  }
+
+  const radical = document.querySelector('button[data-feature="udm14"]');
+  if (radical) {
+    radical.addEventListener("click", async () => {
+      toggles.udm14 = !toggles.udm14;
+      paintRadical(radical, toggles.udm14);
+      await saveToggles();
+      // The service worker owns the live ruleset; tell it to flip.
+      try {
+        await browser.runtime.sendMessage({ type: "hb-set-udm14", value: toggles.udm14 });
+      } catch (_) {
+        /* worker asleep/unreachable — it reconciles from storage on next wake */
+      }
+    });
+  }
+}
+
+async function init() {
+  applyI18n();
+  await loadToggles();
+  renderToggleState();
+  wireToggles();
+  await renderCounter();
+}
+
+init();

@@ -10,9 +10,9 @@
     "url": "https://github.com/rozieres/hallu-block.git"
   },
   "scripts": {
-    "lint": "web-ext lint --source-dir=.",
-    "start:firefox": "web-ext run",
-    "build": "web-ext build --overwrite-dest",
+    "lint": "bash scripts/pack.sh lint",
+    "start:firefox": "web-ext run --no-config-discovery",
+    "build": "bash scripts/pack.sh build",
     "test": "playwright test",
     "vendor:polyfill": "cp node_modules/webextension-polyfill/dist/browser-polyfill.min.js src/lib/browser-polyfill.js"
   },

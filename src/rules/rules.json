@@ -18,6 +18,19 @@
         "div[data-async-type=\"aiOverview\"]"
       ],
       "annotateKey": "annot_google_overview"
+    },
+    {
+      "id": "google-ai-mode",
+      "hosts": ["google.com", "google.fr", "google.be", "google.ch", "google.ca"],
+      "path": "/search",
+      "selectors": [
+        "[role=\"navigation\"] [role=\"list\"] > [role=\"listitem\"]:has(a[href*=\"udm=50\"])",
+        "a[href^=\"/search\"][href*=\"udm=50\"]",
+        "a[href*=\"udm=50\"]"
+      ],
+      "textHeadings": ["Mode IA", "AI Mode"],
+      "ancestorSelectors": ["[role=\"listitem\"]"],
+      "annotateKey": "annot_google_aimode"
     }
   ]
 }

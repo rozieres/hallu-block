@@ -36,6 +36,29 @@ async function getState() {
   return { rules, toggles: { ...DEFAULT_TOGGLES, ...(toggles || {}) } };
 }
 
+// ---- declarativeNetRequest: "Mode Google classique" (udm=14) -----------------
+// Family A — a static ruleset (declared disabled in the manifest) that rewrites
+// google.*/search URLs to add udm=14. We only flip it on/off; the rule itself
+// lives in src/rules/dnr/udm14.json. Enabled state persists across restarts on
+// its own, but we reconcile it to the stored toggle defensively (see below).
+const DNR_UDM14 = "udm14";
+
+async function setUdm14(enabled) {
+  const dnr = browser.declarativeNetRequest;
+  if (!dnr || !dnr.updateEnabledRulesets) return; // Firefox/older builds: no-op
+  await dnr.updateEnabledRulesets(
+    enabled ? { enableRulesetIds: [DNR_UDM14] } : { disableRulesetIds: [DNR_UDM14] }
+  );
+}
+
+// Bring the live ruleset in line with the persisted toggle. Chrome remembers the
+// enabled set across sessions, so this is belt-and-suspenders against a storage/
+// DNR desync (e.g. storage cleared, or a toggle written while the SW was asleep).
+async function syncUdm14() {
+  const { toggles } = await browser.storage.local.get("toggles");
+  await setUdm14(!!(toggles && toggles.udm14)).catch(() => {});
+}
+
 // ---- Local counter -----------------------------------------------------------
 // ISO-8601 week key (e.g. "2026-W27"). Weekly bucket resets automatically when
 // the key changes; nothing ever leaves the browser.
@@ -76,10 +99,22 @@ browser.runtime.onMessage.addListener((msg) => {
     bump();
     return Promise.resolve({ ok: true });
   }
+  // The popup persists the udm14 toggle itself; this only drives the ruleset.
+  if (msg.type === "hb-set-udm14") {
+    return setUdm14(!!msg.value)
+      .then(() => ({ ok: true }))
+      .catch((e) => ({ ok: false, error: String(e) }));
+  }
 });
 
-// ---- Install -----------------------------------------------------------------
+// ---- Install / startup -------------------------------------------------------
 browser.runtime.onInstalled.addListener(async () => {
   const { toggles } = await browser.storage.local.get("toggles");
   if (!toggles) await browser.storage.local.set({ toggles: DEFAULT_TOGGLES });
+  await syncUdm14();
+});
+
+// Reconcile the DNR ruleset with the stored toggle each time the worker spins up.
+browser.runtime.onStartup?.addListener(() => {
+  syncUdm14();
 });
