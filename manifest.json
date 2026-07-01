@@ -19,6 +19,7 @@
     "*://*.google.be/*",
     "*://*.google.ch/*",
     "*://*.google.ca/*",
+    "*://*.bing.com/*",
     "*://*.duckduckgo.com/*"
   ],
 
@@ -48,6 +49,12 @@
         "*://*.google.ca/search*"
       ],
       "css": ["src/content/baseline-google.css", "src/content/annotate.css"],
+      "js": ["src/lib/browser-polyfill.js", "src/content/engine.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://*.bing.com/search*"],
+      "css": ["src/content/annotate.css"],
       "js": ["src/lib/browser-polyfill.js", "src/content/engine.js"],
       "run_at": "document_start"
     },

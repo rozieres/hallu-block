@@ -267,6 +267,43 @@ test("anti-slop on DuckDuckGo: unwraps /l/?uddg= redirect to catch the slop resu
   expect(errors).toEqual([]);
 });
 
+test("Bing Copilot answer + follow-up chat hidden; organic results survive", async () => {
+  const { errors } = await mount({
+    file: "bing-copilot-en.html",
+    url: "https://www.bing.com/search?q=best+productivity+apps",
+    toggles: { ...DEFAULT_TOGGLES, "bing-copilot": true },
+  });
+
+  // The Copilot answer (li.b_ans wrapping #copans_container) and the follow-up
+  // chat container are both removed.
+  await expect(page.locator("#b_results > li.b_ans")).toBeHidden();
+  await expect(page.locator("#b_copilot_search_container")).toBeHidden();
+
+  // Two blocks hidden → two annotations.
+  const annot = page.locator(".hb-annot");
+  await expect(annot).toHaveCount(2);
+  await expect(annot.first()).toContainText(MESSAGES.annot_generic);
+
+  // Organic results untouched.
+  await expect(page.locator("li.b_algo")).toHaveCount(2);
+  await expect(page.locator("li.b_algo").first()).toBeVisible();
+
+  await expect.poll(() => page.evaluate(() => window.__hbBumps)).toBeGreaterThanOrEqual(2);
+  expect(errors).toEqual([]);
+});
+
+test("Bing Copilot toggle OFF → answer stays visible, no annotation", async () => {
+  await mount({
+    file: "bing-copilot-en.html",
+    url: "https://www.bing.com/search?q=x",
+    toggles: { ...DEFAULT_TOGGLES, "bing-copilot": false },
+  });
+
+  await expect(page.locator("#b_results > li.b_ans")).toBeVisible();
+  await expect(page.locator("#b_copilot_search_container")).toBeVisible();
+  await expect(page.locator(".hb-annot")).toHaveCount(0);
+});
+
 test("bundled anti-slop blocklist is well-formed hosts data", () => {
   const raw = read("src/rules/slop/noai_hosts.txt");
   const hostLines = raw

@@ -31,6 +31,20 @@
       "textHeadings": ["Mode IA", "AI Mode"],
       "ancestorSelectors": ["[role=\"listitem\"]"],
       "annotateKey": "annot_google_aimode"
+    },
+    {
+      "id": "bing-copilot",
+      "hosts": ["bing.com"],
+      "path": "/search",
+      "selectors": [
+        "#copans_container",
+        "div.answer_container[aria-label=\"Copilot Search\"]",
+        "div.answer_container[aria-label=\"Recherche Copilot\"]",
+        "#b_copilot_search_container"
+      ],
+      "textHeadings": ["Copilot Search", "Recherche Copilot"],
+      "ancestorSelectors": ["li.b_ans", "#b_copilot_search_container"],
+      "annotateKey": "annot_generic"
     }
   ],
   "slopFilter": {
