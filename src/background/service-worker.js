@@ -36,6 +36,29 @@ async function getState() {
   return { rules, toggles: { ...DEFAULT_TOGGLES, ...(toggles || {}) } };
 }
 
+// ---- Anti-slop blocklist (family C) ------------------------------------------
+// A community CC0 hosts file (`0.0.0.0 domain` per line, # comments) bundled as a
+// snapshot; remote refresh is a later milestone (like rules.json). Parsed once,
+// then handed to the content script on demand — the raw ~4k-line file never
+// crosses into the page, only the domain array does. Kept out of getState so
+// pages with anti-slop off (or non-search pages) don't pay for it.
+let slopCache = null;
+async function getSlopDomains() {
+  if (slopCache) return slopCache;
+  const res = await fetch(browser.runtime.getURL("src/rules/slop/noai_hosts.txt"));
+  const text = await res.text();
+  const domains = [];
+  for (const line of text.split("\n")) {
+    const s = line.trim();
+    if (!s || s[0] === "#") continue;
+    const parts = s.split(/\s+/);
+    const d = (parts.length > 1 ? parts[1] : parts[0]).toLowerCase();
+    if (d && d.includes(".")) domains.push(d);
+  }
+  slopCache = domains;
+  return domains;
+}
+
 // ---- declarativeNetRequest: "Mode Google classique" (udm=14) -----------------
 // Family A — a static ruleset (declared disabled in the manifest) that rewrites
 // google.*/search URLs to add udm=14. We only flip it on/off; the rule itself
@@ -95,6 +118,7 @@ async function doBump() {
 browser.runtime.onMessage.addListener((msg) => {
   if (!msg || typeof msg !== "object") return;
   if (msg.type === "hb-get-state") return getState();
+  if (msg.type === "hb-get-slop") return getSlopDomains().then((domains) => ({ domains }));
   if (msg.type === "hb-bump") {
     bump();
     return Promise.resolve({ ok: true });

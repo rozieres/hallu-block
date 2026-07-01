@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!--
+  Hallu Block E2E fixture — google.fr SERP with AI-slop results mixed in.
+  Two results point at a blocklisted domain (slopfarm.ai, and a subdomain
+  blog.slopfarm.ai to exercise parent-domain matching); two are legitimate
+  (cnil.fr, lemonde.fr) and must survive. No AI Overview here — this fixture is
+  purely about family-C result filtering. Links are direct hrefs (the common
+  modern case); redirector-unwrapping is covered by the engine, not this fixture.
+-->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>meilleurs outils - Recherche Google</title>
+</head>
+<body>
+  <div id="rcnt">
+    <div id="center_col">
+      <div id="search">
+        <div id="rso">
+
+          <div class="g">
+            <a href="https://www.cnil.fr/intelligence-artificielle">
+              <h3>Intelligence artificielle : les risques et la régulation</h3>
+              <cite>cnil.fr › intelligence-artificielle</cite>
+            </a>
+            <div class="VwiC3b">Le point sur les enjeux de l'IA générative.</div>
+          </div>
+
+          <div class="g">
+            <a href="https://slopfarm.ai/top-50-ai-tools-2026">
+              <h3>Top 50 AI Tools Ranked (Updated Daily)</h3>
+              <cite>slopfarm.ai › top-50-ai-tools</cite>
+            </a>
+            <div class="VwiC3b">Auto-generated listicle of the best AI tools you must try.</div>
+          </div>
+
+          <div class="g">
+            <a href="https://www.lemonde.fr/pixels/ia">
+              <h3>Ce que l'IA change vraiment, loin de la hype</h3>
+              <cite>lemonde.fr › pixels</cite>
+            </a>
+            <div class="VwiC3b">Enquête sur les usages réels des modèles génératifs.</div>
+          </div>
+
+          <div class="g">
+            <a href="https://blog.slopfarm.ai/why-you-need-ai-now">
+              <h3>Why You Need AI Now — SEO Content Farm</h3>
+              <cite>blog.slopfarm.ai › why-you-need-ai</cite>
+            </a>
+            <div class="VwiC3b">More auto-generated filler content.</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
