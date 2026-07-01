@@ -56,8 +56,13 @@ test.afterEach(async () => {
 async function mount({ file, url, toggles = DEFAULT_TOGGLES, slopDomains = [] }) {
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
-  await page.route(/[?&]q=|\/search/, (route) =>
-    route.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: fixture(file) })
+  // Serve the fixture as the top document for whatever URL we navigate to
+  // (Google /search, DDG /?q=, YouTube /watch, Amazon /dp/…); abort everything
+  // else so no real network is touched (fixtures inline all their assets).
+  await page.route("**/*", (route) =>
+    route.request().resourceType() === "document"
+      ? route.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: fixture(file) })
+      : route.abort()
   );
   await page.goto(url, { waitUntil: "domcontentloaded" });
   await page.addStyleTag({ content: BASELINE_CSS });
@@ -301,6 +306,35 @@ test("Bing Copilot toggle OFF → answer stays visible, no annotation", async ()
 
   await expect(page.locator("#b_results > li.b_ans")).toBeVisible();
   await expect(page.locator("#b_copilot_search_container")).toBeVisible();
+  await expect(page.locator(".hb-annot")).toHaveCount(0);
+});
+
+test("YouTube 'Ask' button + AI summary hidden; title & description survive", async () => {
+  const { errors } = await mount({
+    file: "youtube-ask.html",
+    url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    toggles: { ...DEFAULT_TOGGLES, "youtube-ask": true },
+  });
+
+  await expect(page.locator("yt-button-view-model")).toBeHidden();
+  await expect(page.locator("ytd-expandable-metadata-renderer[has-video-summary]")).toBeHidden();
+
+  await expect(page.locator("#video-title")).toBeVisible();
+  await expect(page.locator("#description")).toBeVisible();
+
+  await expect(page.locator(".hb-annot")).toHaveCount(2);
+  await expect.poll(() => page.evaluate(() => window.__hbBumps)).toBeGreaterThanOrEqual(2);
+  expect(errors).toEqual([]);
+});
+
+test("YouTube toggle OFF → Ask button stays visible", async () => {
+  await mount({
+    file: "youtube-ask.html",
+    url: "https://www.youtube.com/watch?v=x",
+    toggles: { ...DEFAULT_TOGGLES, "youtube-ask": false },
+  });
+
+  await expect(page.locator("yt-button-view-model")).toBeVisible();
   await expect(page.locator(".hb-annot")).toHaveCount(0);
 });
 

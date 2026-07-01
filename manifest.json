@@ -20,7 +20,8 @@
     "*://*.google.ch/*",
     "*://*.google.ca/*",
     "*://*.bing.com/*",
-    "*://*.duckduckgo.com/*"
+    "*://*.duckduckgo.com/*",
+    "*://*.youtube.com/*"
   ],
 
   "background": {
@@ -60,6 +61,12 @@
     },
     {
       "matches": ["*://*.duckduckgo.com/*"],
+      "css": ["src/content/annotate.css"],
+      "js": ["src/lib/browser-polyfill.js", "src/content/engine.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.youtube.com/*"],
       "css": ["src/content/annotate.css"],
       "js": ["src/lib/browser-polyfill.js", "src/content/engine.js"],
       "run_at": "document_idle"

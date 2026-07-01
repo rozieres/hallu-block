@@ -45,6 +45,18 @@
       "textHeadings": ["Copilot Search", "Recherche Copilot"],
       "ancestorSelectors": ["li.b_ans", "#b_copilot_search_container"],
       "annotateKey": "annot_generic"
+    },
+    {
+      "id": "youtube-ask",
+      "hosts": ["youtube.com"],
+      "selectors": [
+        ".you-chat-entrypoint-button",
+        "yt-video-description-youchat-section-view-model",
+        ".ytp-suggested-action-badge[aria-label=\"Ask about this video\"]",
+        "ytd-expandable-metadata-renderer[has-video-summary]"
+      ],
+      "ancestorSelectors": ["yt-button-view-model", "ytd-expandable-metadata-renderer"],
+      "annotateKey": "annot_generic"
     }
   ],
   "slopFilter": {
