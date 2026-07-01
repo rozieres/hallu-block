@@ -29,7 +29,5 @@ html:not(.hb-show-google-ai-mode) [role="navigation"] [role="list"] > [role="lis
   display: none !important;
 }
 
-/* Engine-applied hide, for text-detected containers the attribute rules miss. */
-.hb-hidden {
-  display: none !important;
-}
+/* Note: the engine-applied `.hb-hidden` class lives in annotate.css, which is
+   injected wherever the engine runs (not just Google). */

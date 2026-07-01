@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<!--
+  Hallu Block E2E fixture — an amazon.fr product page with Rufus + AI review
+  summary. Rufus launcher = #nav-rufus-disco; the AI review summary ("Les
+  clients disent") = #cr-product-insights-cards. Both must be hidden; the real
+  product title and reviews must survive. (Rufus IS available in France, logged
+  in — DOM ids are locale-independent; only the visible text differs.)
+-->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Casque audio sans fil : Amazon.fr</title>
+</head>
+<body>
+  <header id="nav-belt">
+    <div id="nav-rufus-disco" aria-label="Ouvrir le panneau Rufus"
+         data-csa-c-content-id="rufus-dsk-disco-content">
+      <span id="nav-rufus-disco-text">Rufus</span>
+    </div>
+  </header>
+
+  <div id="dp-container">
+    <h1 id="productTitle">Casque audio sans fil à réduction de bruit</h1>
+    <div id="corePrice">129,99 €</div>
+
+    <div id="cr-product-insights-cards" data-csa-c-item-id="cr-product-insights-cards">
+      <h3>Les clients disent</h3>
+      <p>Résumé généré par IA à partir des avis clients…</p>
+    </div>
+
+    <div id="reviewsMedley">
+      <div class="review">Avis client réel, écrit par un humain.</div>
+    </div>
+  </div>
+</body>
+</html>

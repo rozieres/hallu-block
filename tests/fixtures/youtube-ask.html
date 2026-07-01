@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<!--
+  Hallu Block E2E fixture — a YouTube watch page with the AI "Ask" entry points.
+  YouTube uses custom elements (yt-button-view-model, ytd-expandable-metadata-
+  renderer). The main "Ask" button carries .you-chat-entrypoint-button; the AI
+  video summary lives in ytd-expandable-metadata-renderer[has-video-summary].
+  Both must be hidden; the real title + description must survive.
+  (These features are experiment-gated and largely absent in France — this
+  fixture pins the DOM shape the engine targets so the rule is regression-safe.)
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Some video - YouTube</title>
+</head>
+<body>
+  <div id="content">
+    <h1 id="video-title">A perfectly normal video</h1>
+
+    <yt-button-view-model class="rotating-hash-abc">
+      <button class="you-chat-entrypoint-button" aria-label="Ask">Ask</button>
+    </yt-button-view-model>
+
+    <ytd-expandable-metadata-renderer has-video-summary>
+      <div id="video-summary">AI-generated summary of the video…</div>
+    </ytd-expandable-metadata-renderer>
+
+    <div id="description">Real, human-written video description.</div>
+  </div>
+</body>
+</html>

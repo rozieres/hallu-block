@@ -53,24 +53,32 @@ test.afterEach(async () => {
   await context?.close();
 });
 
-async function mount({ file, url, toggles = DEFAULT_TOGGLES }) {
+async function mount({ file, url, toggles = DEFAULT_TOGGLES, slopDomains = [] }) {
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
-  await page.route("**/search*", (route) =>
-    route.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: fixture(file) })
+  // Serve the fixture as the top document for whatever URL we navigate to
+  // (Google /search, DDG /?q=, YouTube /watch, Amazon /dp/…); abort everything
+  // else so no real network is touched (fixtures inline all their assets).
+  await page.route("**/*", (route) =>
+    route.request().resourceType() === "document"
+      ? route.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: fixture(file) })
+      : route.abort()
   );
   await page.goto(url, { waitUntil: "domcontentloaded" });
   await page.addStyleTag({ content: BASELINE_CSS });
   await page.addStyleTag({ content: ANNOTATE_CSS });
   await page.evaluate(
-    ({ rules, messages, toggles }) => {
+    ({ rules, messages, toggles, slopDomains }) => {
       window.__hbBumps = 0;
+      window.__hbBumpFeatures = [];
       window.browser = {
         runtime: {
           sendMessage: async (msg) => {
             if (msg && msg.type === "hb-get-state") return { rules, toggles };
+            if (msg && msg.type === "hb-get-slop") return { domains: slopDomains };
             if (msg && msg.type === "hb-bump") {
               window.__hbBumps++;
+              window.__hbBumpFeatures.push(msg.feature);
               return { ok: true };
             }
           },
@@ -82,7 +90,7 @@ async function mount({ file, url, toggles = DEFAULT_TOGGLES }) {
         },
       };
     },
-    { rules: RULES, messages: MESSAGES, toggles }
+    { rules: RULES, messages: MESSAGES, toggles, slopDomains }
   );
   await page.addScriptTag({ content: ENGINE_SRC });
   return { errors };
@@ -197,4 +205,181 @@ test("AI Mode toggle OFF → tab stays visible, no annotation", async () => {
 
   await expect(page.locator(AI_MODE_TAB)).toBeVisible();
   await expect(page.locator(".hb-annot")).toHaveCount(0);
+});
+
+const SLOP = ["slopfarm.ai"]; // stub blocklist — deterministic, not the real file
+
+test("anti-slop: blocklisted results (incl. subdomain) hidden, clean ones kept", async () => {
+  const { errors } = await mount({
+    file: "google-slop-fr.html",
+    url: "https://www.google.fr/search?q=meilleurs+outils&hl=fr",
+    toggles: { ...DEFAULT_TOGGLES, "anti-slop": true },
+    slopDomains: SLOP,
+  });
+
+  // slopfarm.ai and blog.slopfarm.ai (parent-domain match) are removed…
+  const blocked = page.locator('#rso .g:has(a[href*="slopfarm.ai"])');
+  await expect(blocked).toHaveCount(2);
+  await expect(blocked.first()).toBeHidden();
+  await expect(blocked.last()).toBeHidden();
+
+  // …legitimate results survive.
+  await expect(page.locator('#rso .g:has(a[href*="cnil.fr"])')).toBeVisible();
+  await expect(page.locator('#rso .g:has(a[href*="lemonde.fr"])')).toBeVisible();
+
+  // Each removed result gets the community-list annotation, and is counted.
+  const annot = page.locator(".hb-annot");
+  await expect(annot).toHaveCount(2);
+  await expect(annot.first()).toContainText(MESSAGES.annot_slop);
+
+  await expect.poll(() => page.evaluate(() => window.__hbBumps)).toBeGreaterThanOrEqual(2);
+  expect(await page.evaluate(() => window.__hbBumpFeatures)).toContain("anti-slop");
+  expect(errors).toEqual([]);
+});
+
+test("anti-slop toggle OFF → no result is filtered", async () => {
+  await mount({
+    file: "google-slop-fr.html",
+    url: "https://www.google.fr/search?q=meilleurs+outils&hl=fr",
+    toggles: { ...DEFAULT_TOGGLES, "anti-slop": false },
+    slopDomains: SLOP,
+  });
+
+  await expect(page.locator("#rso .g")).toHaveCount(4);
+  for (let i = 0; i < 4; i++) await expect(page.locator("#rso .g").nth(i)).toBeVisible();
+  await expect(page.locator(".hb-annot")).toHaveCount(0);
+});
+
+test("anti-slop on DuckDuckGo: unwraps /l/?uddg= redirect to catch the slop result", async () => {
+  const { errors } = await mount({
+    file: "ddg-slop.html",
+    url: "https://duckduckgo.com/?q=meilleurs+outils",
+    toggles: { ...DEFAULT_TOGGLES, "anti-slop": true },
+    slopDomains: SLOP,
+  });
+
+  // The slop link's raw host is duckduckgo.com; only after unwrapping uddg= does
+  // it resolve to slopfarm.ai and get filtered.
+  const blocked = page.locator('article[data-testid="result"]:has(a[href*="uddg="])');
+  await expect(blocked).toHaveCount(1);
+  await expect(blocked).toBeHidden();
+
+  await expect(page.locator('article[data-testid="result"]:has(a[href*="cnil.fr"])')).toBeVisible();
+
+  const annot = page.locator(".hb-annot");
+  await expect(annot).toHaveCount(1);
+  await expect(annot).toContainText(MESSAGES.annot_slop);
+  expect(errors).toEqual([]);
+});
+
+test("Bing Copilot answer + follow-up chat hidden; organic results survive", async () => {
+  const { errors } = await mount({
+    file: "bing-copilot-en.html",
+    url: "https://www.bing.com/search?q=best+productivity+apps",
+    toggles: { ...DEFAULT_TOGGLES, "bing-copilot": true },
+  });
+
+  // The Copilot answer (li.b_ans wrapping #copans_container) and the follow-up
+  // chat container are both removed.
+  await expect(page.locator("#b_results > li.b_ans")).toBeHidden();
+  await expect(page.locator("#b_copilot_search_container")).toBeHidden();
+
+  // Two blocks hidden → two annotations.
+  const annot = page.locator(".hb-annot");
+  await expect(annot).toHaveCount(2);
+  await expect(annot.first()).toContainText(MESSAGES.annot_generic);
+
+  // Organic results untouched.
+  await expect(page.locator("li.b_algo")).toHaveCount(2);
+  await expect(page.locator("li.b_algo").first()).toBeVisible();
+
+  await expect.poll(() => page.evaluate(() => window.__hbBumps)).toBeGreaterThanOrEqual(2);
+  expect(errors).toEqual([]);
+});
+
+test("Bing Copilot toggle OFF → answer stays visible, no annotation", async () => {
+  await mount({
+    file: "bing-copilot-en.html",
+    url: "https://www.bing.com/search?q=x",
+    toggles: { ...DEFAULT_TOGGLES, "bing-copilot": false },
+  });
+
+  await expect(page.locator("#b_results > li.b_ans")).toBeVisible();
+  await expect(page.locator("#b_copilot_search_container")).toBeVisible();
+  await expect(page.locator(".hb-annot")).toHaveCount(0);
+});
+
+test("YouTube 'Ask' button + AI summary hidden; title & description survive", async () => {
+  const { errors } = await mount({
+    file: "youtube-ask.html",
+    url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    toggles: { ...DEFAULT_TOGGLES, "youtube-ask": true },
+  });
+
+  await expect(page.locator("yt-button-view-model")).toBeHidden();
+  await expect(page.locator("ytd-expandable-metadata-renderer[has-video-summary]")).toBeHidden();
+
+  await expect(page.locator("#video-title")).toBeVisible();
+  await expect(page.locator("#description")).toBeVisible();
+
+  await expect(page.locator(".hb-annot")).toHaveCount(2);
+  await expect.poll(() => page.evaluate(() => window.__hbBumps)).toBeGreaterThanOrEqual(2);
+  expect(errors).toEqual([]);
+});
+
+test("YouTube toggle OFF → Ask button stays visible", async () => {
+  await mount({
+    file: "youtube-ask.html",
+    url: "https://www.youtube.com/watch?v=x",
+    toggles: { ...DEFAULT_TOGGLES, "youtube-ask": false },
+  });
+
+  await expect(page.locator("yt-button-view-model")).toBeVisible();
+  await expect(page.locator(".hb-annot")).toHaveCount(0);
+});
+
+test("Amazon Rufus launcher + AI review summary hidden; product content survives", async () => {
+  const { errors } = await mount({
+    file: "amazon-rufus-fr.html",
+    url: "https://www.amazon.fr/dp/B08EXAMPLE",
+    toggles: { ...DEFAULT_TOGGLES, "amazon-rufus": true },
+  });
+
+  await expect(page.locator("#nav-rufus-disco")).toBeHidden();
+  await expect(page.locator("#cr-product-insights-cards")).toBeHidden();
+
+  await expect(page.locator("#productTitle")).toBeVisible();
+  await expect(page.locator("#reviewsMedley")).toBeVisible();
+
+  await expect(page.locator(".hb-annot")).toHaveCount(2);
+  await expect.poll(() => page.evaluate(() => window.__hbBumps)).toBeGreaterThanOrEqual(2);
+  expect(errors).toEqual([]);
+});
+
+test("Amazon Rufus toggle OFF → launcher stays visible", async () => {
+  await mount({
+    file: "amazon-rufus-fr.html",
+    url: "https://www.amazon.fr/dp/x",
+    toggles: { ...DEFAULT_TOGGLES, "amazon-rufus": false },
+  });
+
+  await expect(page.locator("#nav-rufus-disco")).toBeVisible();
+  await expect(page.locator("#cr-product-insights-cards")).toBeVisible();
+  await expect(page.locator(".hb-annot")).toHaveCount(0);
+});
+
+test("bundled anti-slop blocklist is well-formed hosts data", () => {
+  const raw = read("src/rules/slop/noai_hosts.txt");
+  const hostLines = raw
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith("#"));
+
+  // Every data line is hosts-file format: `0.0.0.0 <token>`.
+  for (const l of hostLines) expect(l).toMatch(/^0\.0\.0\.0\s+\S+$/);
+
+  // The SW keeps only tokens that look like real domains (contain a dot); a few
+  // dotless entries (e.g. "0.0.0.0 artbreeder") exist and are correctly dropped.
+  const domains = hostLines.map((l) => l.split(/\s+/)[1]).filter((d) => d.includes("."));
+  expect(domains.length).toBeGreaterThan(2000);
 });
