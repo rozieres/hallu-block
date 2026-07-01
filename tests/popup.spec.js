@@ -237,3 +237,33 @@ for (const rs of REDIRECT_RULESETS) {
     expect(reg.path).toBe(rs.file);
   });
 }
+
+// ---- Remote hot-fix rules (MVP-3) --------------------------------------------
+const vparts = (v) => String(v || "").split(".").map((n) => parseInt(n, 10) || 0);
+function versionGte(a, b) {
+  const pa = vparts(a);
+  const pb = vparts(b);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] || 0;
+    const y = pb[i] || 0;
+    if (x !== y) return x > y;
+  }
+  return true; // equal → gte
+}
+
+test("served docs/rules.json is valid and never behind the bundled rules", () => {
+  const bundled = JSON.parse(read("src/rules/rules.json"));
+  const served = JSON.parse(read("docs/rules.json"));
+
+  expect(typeof served.version).toBe("string");
+  expect(Array.isArray(served.hide)).toBe(true);
+  // The hosted copy must be >= bundled, or clients would never adopt it (and a
+  // stale hosted file could otherwise look "newer" by accident).
+  expect(versionGte(served.version, bundled.version)).toBe(true);
+});
+
+test("manifest enables the remote-refresh alarm + hosting host permission", () => {
+  const mf = JSON.parse(read("manifest.json"));
+  expect(mf.permissions).toContain("alarms");
+  expect(mf.host_permissions).toContain("https://rozieres.github.io/*");
+});

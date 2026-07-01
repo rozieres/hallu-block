@@ -19,13 +19,61 @@ const DEFAULT_TOGGLES = {
   udm14: false,
 };
 
-// ---- Rules (bundled now; remote hot-fix override is a later milestone) -------
+// ---- Rules: bundled snapshot + remote hot-fix override -----------------------
+// The engine's rules ship bundled, but Google (etc.) can change its DOM any day.
+// A daily alarm fetches a remote rules.json and, if its `version` is newer,
+// caches it in storage.local; getRules() then prefers it. This lets us fix a
+// broken selector by editing a hosted file — no Chrome Web Store re-review.
+// Everything fails OPEN: a bad fetch / bad JSON / unreachable host keeps the
+// bundled rules, so a hosting outage can never break a page.
+const REMOTE_RULES_URL = "https://rozieres.github.io/hallu-block/rules.json";
+
+// Compare "YYYY.MM.DD"-style versions numerically (robust to non-padded parts).
+function versionNewer(a, b) {
+  const pa = String(a || "").split(".").map((n) => parseInt(n, 10) || 0);
+  const pb = String(b || "").split(".").map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] || 0;
+    const y = pb[i] || 0;
+    if (x !== y) return x > y;
+  }
+  return false;
+}
+
 let rulesCache = null;
+async function loadBundledRules() {
+  const res = await fetch(browser.runtime.getURL("src/rules/rules.json"));
+  return res.json();
+}
+
 async function getRules() {
   if (rulesCache) return rulesCache;
-  const res = await fetch(browser.runtime.getURL("src/rules/rules.json"));
-  rulesCache = await res.json();
+  const bundled = await loadBundledRules();
+  const { remoteRules } = await browser.storage.local.get("remoteRules");
+  rulesCache =
+    remoteRules && versionNewer(remoteRules.version, bundled.version) ? remoteRules : bundled;
   return rulesCache;
+}
+
+// Fetch the hosted rules; adopt them only if well-formed AND strictly newer than
+// what we're already using. Silent no-op on any failure (offline, 404, bad JSON).
+async function refreshRemoteRules() {
+  try {
+    const res = await fetch(REMOTE_RULES_URL, { cache: "no-cache" });
+    if (!res.ok) return;
+    const remote = await res.json();
+    if (!remote || typeof remote.version !== "string" || !Array.isArray(remote.hide)) return;
+    const bundled = await loadBundledRules();
+    const { remoteRules } = await browser.storage.local.get("remoteRules");
+    const current =
+      remoteRules && versionNewer(remoteRules.version, bundled.version) ? remoteRules : bundled;
+    if (versionNewer(remote.version, current.version)) {
+      await browser.storage.local.set({ remoteRules: remote });
+      rulesCache = null; // force getRules() to re-pick on next read
+    }
+  } catch (_) {
+    /* keep whatever we already have — never break a page over a network error */
+  }
 }
 
 async function getState() {
@@ -136,14 +184,31 @@ browser.runtime.onMessage.addListener((msg) => {
   }
 });
 
+// ---- Remote-rules refresh schedule -------------------------------------------
+// A daily alarm survives service-worker suspension (a plain setInterval would
+// not). We also refresh opportunistically on install and startup.
+const RULES_ALARM = "hb-refresh-rules";
+
+function scheduleRulesRefresh() {
+  browser.alarms?.create(RULES_ALARM, { periodInMinutes: 1440 }); // ~daily
+}
+
+browser.alarms?.onAlarm.addListener((alarm) => {
+  if (alarm.name === RULES_ALARM) refreshRemoteRules();
+});
+
 // ---- Install / startup -------------------------------------------------------
 browser.runtime.onInstalled.addListener(async () => {
   const { toggles } = await browser.storage.local.get("toggles");
   if (!toggles) await browser.storage.local.set({ toggles: DEFAULT_TOGGLES });
   await syncDnr();
+  scheduleRulesRefresh();
+  refreshRemoteRules();
 });
 
-// Reconcile the DNR rulesets with their stored toggles each worker spin-up.
+// Reconcile DNR rulesets + re-arm the refresh alarm each worker spin-up.
 browser.runtime.onStartup?.addListener(() => {
   syncDnr();
+  scheduleRulesRefresh();
+  refreshRemoteRules();
 });
