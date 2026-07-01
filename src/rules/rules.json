@@ -57,6 +57,20 @@
       ],
       "ancestorSelectors": ["yt-button-view-model", "ytd-expandable-metadata-renderer"],
       "annotateKey": "annot_generic"
+    },
+    {
+      "id": "amazon-rufus",
+      "hosts": ["amazon.fr", "amazon.com"],
+      "selectors": [
+        "#nav-rufus-disco",
+        "#nav-flyout-rufus",
+        ".rufus-panel-container",
+        ".rufus-view-filler",
+        "#cr-product-insights-cards",
+        "[data-csa-c-item-id=\"cr-product-insights-detail-page\"]"
+      ],
+      "ancestorSelectors": [],
+      "annotateKey": "annot_generic"
     }
   ],
   "slopFilter": {

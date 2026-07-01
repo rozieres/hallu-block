@@ -21,7 +21,9 @@
     "*://*.google.ca/*",
     "*://*.bing.com/*",
     "*://*.duckduckgo.com/*",
-    "*://*.youtube.com/*"
+    "*://*.youtube.com/*",
+    "*://*.amazon.fr/*",
+    "*://*.amazon.com/*"
   ],
 
   "background": {
@@ -67,6 +69,12 @@
     },
     {
       "matches": ["*://*.youtube.com/*"],
+      "css": ["src/content/annotate.css"],
+      "js": ["src/lib/browser-polyfill.js", "src/content/engine.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.amazon.fr/*", "*://*.amazon.com/*"],
       "css": ["src/content/annotate.css"],
       "js": ["src/lib/browser-polyfill.js", "src/content/engine.js"],
       "run_at": "document_idle"

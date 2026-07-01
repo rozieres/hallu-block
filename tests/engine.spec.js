@@ -338,6 +338,36 @@ test("YouTube toggle OFF → Ask button stays visible", async () => {
   await expect(page.locator(".hb-annot")).toHaveCount(0);
 });
 
+test("Amazon Rufus launcher + AI review summary hidden; product content survives", async () => {
+  const { errors } = await mount({
+    file: "amazon-rufus-fr.html",
+    url: "https://www.amazon.fr/dp/B08EXAMPLE",
+    toggles: { ...DEFAULT_TOGGLES, "amazon-rufus": true },
+  });
+
+  await expect(page.locator("#nav-rufus-disco")).toBeHidden();
+  await expect(page.locator("#cr-product-insights-cards")).toBeHidden();
+
+  await expect(page.locator("#productTitle")).toBeVisible();
+  await expect(page.locator("#reviewsMedley")).toBeVisible();
+
+  await expect(page.locator(".hb-annot")).toHaveCount(2);
+  await expect.poll(() => page.evaluate(() => window.__hbBumps)).toBeGreaterThanOrEqual(2);
+  expect(errors).toEqual([]);
+});
+
+test("Amazon Rufus toggle OFF → launcher stays visible", async () => {
+  await mount({
+    file: "amazon-rufus-fr.html",
+    url: "https://www.amazon.fr/dp/x",
+    toggles: { ...DEFAULT_TOGGLES, "amazon-rufus": false },
+  });
+
+  await expect(page.locator("#nav-rufus-disco")).toBeVisible();
+  await expect(page.locator("#cr-product-insights-cards")).toBeVisible();
+  await expect(page.locator(".hb-annot")).toHaveCount(0);
+});
+
 test("bundled anti-slop blocklist is well-formed hosts data", () => {
   const raw = read("src/rules/slop/noai_hosts.txt");
   const hostLines = raw
