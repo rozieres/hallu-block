@@ -120,6 +120,8 @@ function paintLi(li, on) {
 function paintRadical(btn, on) {
   btn.classList.toggle("on", on);
   btn.setAttribute("aria-pressed", String(on));
+  const check = btn.querySelector(".check");
+  if (check) check.textContent = on ? "[█]" : "[ ]";
 }
 
 function renderToggleState() {
