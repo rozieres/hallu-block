@@ -143,6 +143,23 @@
     // Skip if an ancestor was already handled (avoid nested double-annotation).
     if (el.parentElement && el.parentElement.closest('[data-hb-done="1"]')) return false;
     el.dataset.hbDone = "1";
+
+    // CSS-annotation mode — for hosts that aggressively re-render and strip ANY
+    // injected node (Bing's Copilot runs its own MutationObserver that removes
+    // foreign children instantly; fighting it is an unwinnable loop). Instead the
+    // bandeau is a PSEUDO-ELEMENT on the container itself: no DOM node exists to
+    // remove. The container's real content is hidden via CSS (.hb-css-annot > *)
+    // and ::before/::after render the bar. Our class + data-* survive the host's
+    // re-renders (observed), and pseudo-elements are untouchable by any observer.
+    if (rule.annotMode === "css" && showBlocks) {
+      el.dataset.hbLabel =
+        api.i18n.getMessage(rule.annotateKey) || api.i18n.getMessage("annot_generic");
+      el.dataset.hbShow = api.i18n.getMessage("annot_show");
+      el.classList.add("hb-css-annot");
+      return true;
+    }
+
+    // Default mode: hide the element, optionally insert a DOM annotation bar.
     el.classList.add("hb-hidden");
     if (showBlocks && el.parentNode) {
       el.parentNode.insertBefore(buildAnnotation(el, rule), el);
@@ -304,6 +321,15 @@
     }
     if (slopSet && slopSet.size) filterSlop();
   }
+
+  // Reveal for CSS-annotation mode (Bing): clicking the pseudo-element bandeau
+  // drops the .hb-css-annot class so the real content shows. Delegated on the
+  // document so it survives host re-renders. data-hbDone stays set, so apply()
+  // won't re-hide it.
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest && e.target.closest(".hb-css-annot");
+    if (t) t.classList.remove("hb-css-annot");
+  });
 
   apply(); // initial sweep
   const obs = new MutationObserver(debounce(apply, 80));

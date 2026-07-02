@@ -44,7 +44,8 @@
       ],
       "textHeadings": ["Copilot Search", "Recherche Copilot"],
       "ancestorSelectors": ["li.b_ans", "#b_copilot_search_container"],
-      "annotateKey": "annot_generic"
+      "annotateKey": "annot_generic",
+      "annotMode": "css"
     },
     {
       "id": "youtube-ask",
