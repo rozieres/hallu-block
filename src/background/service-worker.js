@@ -19,61 +19,19 @@ const DEFAULT_TOGGLES = {
   udm14: false,
 };
 
-// ---- Rules: bundled snapshot + remote hot-fix override -----------------------
-// The engine's rules ship bundled, but Google (etc.) can change its DOM any day.
-// A daily alarm fetches a remote rules.json and, if its `version` is newer,
-// caches it in storage.local; getRules() then prefers it. This lets us fix a
-// broken selector by editing a hosted file — no Chrome Web Store re-review.
-// Everything fails OPEN: a bad fetch / bad JSON / unreachable host keeps the
-// bundled rules, so a hosting outage can never break a page.
-const REMOTE_RULES_URL = "https://rozieres.github.io/hallu-block/rules.json";
-
-// Compare "YYYY.MM.DD"-style versions numerically (robust to non-padded parts).
-function versionNewer(a, b) {
-  const pa = String(a || "").split(".").map((n) => parseInt(n, 10) || 0);
-  const pb = String(b || "").split(".").map((n) => parseInt(n, 10) || 0);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const x = pa[i] || 0;
-    const y = pb[i] || 0;
-    if (x !== y) return x > y;
-  }
-  return false;
-}
-
+// ---- Rules: bundled snapshot -------------------------------------------------
+// The engine's masking rules ship bundled with the extension. There is NO remote
+// fetch of any kind: nothing ever leaves the browser (see docs/privacy.md). When
+// a target site changes its DOM, we fix the selectors in src/rules/rules.json and
+// ship a normal Chrome Web Store update — the deliberate price of a strictly-
+// local privacy promise. The only fetch here reads a file packaged INSIDE the
+// extension via runtime.getURL(), which never touches the network.
 let rulesCache = null;
-async function loadBundledRules() {
-  const res = await fetch(browser.runtime.getURL("src/rules/rules.json"));
-  return res.json();
-}
-
 async function getRules() {
   if (rulesCache) return rulesCache;
-  const bundled = await loadBundledRules();
-  const { remoteRules } = await browser.storage.local.get("remoteRules");
-  rulesCache =
-    remoteRules && versionNewer(remoteRules.version, bundled.version) ? remoteRules : bundled;
+  const res = await fetch(browser.runtime.getURL("src/rules/rules.json"));
+  rulesCache = await res.json();
   return rulesCache;
-}
-
-// Fetch the hosted rules; adopt them only if well-formed AND strictly newer than
-// what we're already using. Silent no-op on any failure (offline, 404, bad JSON).
-async function refreshRemoteRules() {
-  try {
-    const res = await fetch(REMOTE_RULES_URL, { cache: "no-cache" });
-    if (!res.ok) return;
-    const remote = await res.json();
-    if (!remote || typeof remote.version !== "string" || !Array.isArray(remote.hide)) return;
-    const bundled = await loadBundledRules();
-    const { remoteRules } = await browser.storage.local.get("remoteRules");
-    const current =
-      remoteRules && versionNewer(remoteRules.version, bundled.version) ? remoteRules : bundled;
-    if (versionNewer(remote.version, current.version)) {
-      await browser.storage.local.set({ remoteRules: remote });
-      rulesCache = null; // force getRules() to re-pick on next read
-    }
-  } catch (_) {
-    /* keep whatever we already have — never break a page over a network error */
-  }
 }
 
 async function getState() {
@@ -85,26 +43,33 @@ async function getState() {
 }
 
 // ---- Anti-slop blocklist (family C) ------------------------------------------
-// A community CC0 hosts file (`0.0.0.0 domain` per line, # comments) bundled as a
-// snapshot; remote refresh is a later milestone (like rules.json). Parsed once,
+// A community CC0 hosts file (`0.0.0.0 domain` per line, # comments) shipped as a
+// bundled snapshot — no remote refresh (same strictly-local promise as rules.json
+// above; refreshed via Chrome Web Store updates). Parsed once,
 // then handed to the content script on demand — the raw ~4k-line file never
 // crosses into the page, only the domain array does. Kept out of getState so
 // pages with anti-slop off (or non-search pages) don't pay for it.
 let slopCache = null;
+// A bare-hostname matcher: dot-separated labels + an alpha TLD, nothing else.
+// Upstream lines occasionally carry a path ("youtube.com/@Foo"), a port, or junk;
+// those can never equal a location.hostname, so we drop them rather than ship
+// noise to the content script. (Linear regex — no backtracking on long input.)
+const HOST_RE = /^[a-z0-9.-]+\.[a-z]{2,}$/;
 async function getSlopDomains() {
   if (slopCache) return slopCache;
   const res = await fetch(browser.runtime.getURL("src/rules/slop/noai_hosts.txt"));
   const text = await res.text();
-  const domains = [];
+  const seen = new Set(); // normalize + dedupe
   for (const line of text.split("\n")) {
     const s = line.trim();
     if (!s || s[0] === "#") continue;
     const parts = s.split(/\s+/);
-    const d = (parts.length > 1 ? parts[1] : parts[0]).toLowerCase();
-    if (d && d.includes(".")) domains.push(d);
+    // hosts-file format is "0.0.0.0 <host>"; tolerate a bare host too.
+    const host = (parts.length > 1 ? parts[1] : parts[0]).toLowerCase().replace(/^\*\./, "");
+    if (HOST_RE.test(host)) seen.add(host);
   }
-  slopCache = domains;
-  return domains;
+  slopCache = [...seen];
+  return slopCache;
 }
 
 // ---- declarativeNetRequest: family-A URL rewrites ----------------------------
@@ -184,31 +149,14 @@ browser.runtime.onMessage.addListener((msg) => {
   }
 });
 
-// ---- Remote-rules refresh schedule -------------------------------------------
-// A daily alarm survives service-worker suspension (a plain setInterval would
-// not). We also refresh opportunistically on install and startup.
-const RULES_ALARM = "hb-refresh-rules";
-
-function scheduleRulesRefresh() {
-  browser.alarms?.create(RULES_ALARM, { periodInMinutes: 1440 }); // ~daily
-}
-
-browser.alarms?.onAlarm.addListener((alarm) => {
-  if (alarm.name === RULES_ALARM) refreshRemoteRules();
-});
-
 // ---- Install / startup -------------------------------------------------------
 browser.runtime.onInstalled.addListener(async () => {
   const { toggles } = await browser.storage.local.get("toggles");
   if (!toggles) await browser.storage.local.set({ toggles: DEFAULT_TOGGLES });
   await syncDnr();
-  scheduleRulesRefresh();
-  refreshRemoteRules();
 });
 
-// Reconcile DNR rulesets + re-arm the refresh alarm each worker spin-up.
+// Reconcile DNR rulesets with their persisted toggles on each worker spin-up.
 browser.runtime.onStartup?.addListener(() => {
   syncDnr();
-  scheduleRulesRefresh();
-  refreshRemoteRules();
 });
