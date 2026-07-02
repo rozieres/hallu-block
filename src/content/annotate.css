@@ -68,7 +68,9 @@
   line-height: 1.4 !important;
   color: #1C2333 !important;
   box-shadow: none !important;
+  width: 100% !important;
   max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .hb-annot .hb-annot-blk {
