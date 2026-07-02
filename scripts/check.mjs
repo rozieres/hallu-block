@@ -11,7 +11,9 @@
 //   4. the popup's DEFAULT_TOGGLES match the service worker's (they must, or a
 //      fresh profile shows a different state than the engine applies);
 //   5. the "100% local" privacy promise holds: no network permission, no remote
-//      host, no external fetch in the service worker.
+//      host, no raw network primitive (fetch to a non-getURL arg, XHR, WebSocket,
+//      EventSource, sendBeacon) in ANY authored script, and a CSP that pins
+//      connect-src to 'self'.
 //
 // Exit 0 = release-safe. Exit 1 = a problem a reviewer or user would hit.
 
@@ -120,9 +122,36 @@ if (manifest) {
     }
   }
 }
-const sw = read("src/background/service-worker.js");
-if (/fetch\(\s*["'`]https?:/i.test(sw)) fail("service worker fetches a literal http(s) URL");
-if (sw.includes("rozieres.github.io")) fail("service worker still references the old rules host");
+// Scan EVERY script we author (not just the SW): a fetch/XHR/WebSocket/beacon in
+// the content script or popup leaks just as badly. The vendored polyfill is a
+// vetted third-party file and is excluded. Two rules:
+//   a. no raw network primitive at all;
+//   b. every fetch() must read a packaged file via runtime.getURL() — nothing else.
+const scriptFiles = [
+  "src/background/service-worker.js",
+  "src/content/engine.js",
+  "src/popup/popup.js",
+];
+const NET_PRIMITIVE = /\b(XMLHttpRequest|WebSocket|EventSource|sendBeacon)\b/;
+for (const f of scriptFiles) {
+  const src = read(f);
+  const prim = NET_PRIMITIVE.exec(src);
+  if (prim) fail(`${f} uses network primitive "${prim[1]}" — the build must stay strictly local`);
+  if (src.includes("rozieres.github.io")) fail(`${f} still references the old remote rules host`);
+  for (const call of src.matchAll(/fetch\s*\(\s*([^)]*)/g)) {
+    const arg = call[1].trim();
+    if (!/^(?:browser|chrome|globalThis|self)?\.?runtime\.getURL\b/.test(arg)) {
+      fail(`${f} calls fetch() with a non-getURL argument (${arg.slice(0, 40)}…) — strictly local`);
+    }
+  }
+}
+
+// Platform-level backstop: a CSP that pins connect-src to 'self' means the SW and
+// popup physically cannot open a remote connection, even if code review misses it.
+const csp = manifest?.content_security_policy?.extension_pages || "";
+if (!/connect-src\s+'self'/.test(csp)) {
+  fail("manifest content_security_policy.extension_pages must pin connect-src to 'self'");
+}
 
 // ---- report ------------------------------------------------------------------
 if (errors.length) {

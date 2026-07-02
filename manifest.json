@@ -14,6 +14,10 @@
 
   "permissions": ["storage", "declarativeNetRequest"],
 
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self'"
+  },
+
   "host_permissions": [
     "*://*.google.com/*",
     "*://*.google.fr/*",

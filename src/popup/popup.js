@@ -179,6 +179,11 @@ function wireToggles() {
       flip();
     });
     li.addEventListener("keydown", (e) => {
+      // Same exception as the click handler: let the embedded "community list"
+      // link work via the keyboard. Without this, Enter/Space on the focused
+      // link bubbles here, flips the switch, and preventDefault() even swallows
+      // the link's own navigation.
+      if (e.target.closest("a")) return;
       if (e.key === " " || e.key === "Enter") {
         e.preventDefault(); // Space would otherwise scroll the popup
         flip();

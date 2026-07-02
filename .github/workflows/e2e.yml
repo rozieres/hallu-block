@@ -39,8 +39,14 @@ jobs:
           zip=$(ls web-ext-artifacts/*.zip | head -1)
           echo "Inspecting $zip"
           unzip -l "$zip"
-          if unzip -l "$zip" | grep -Ei '_reflexion|/tests/|/docs/|\.github|node_modules|package(-lock)?\.json|playwright|scripts/'; then
-            echo "::error::Non-shippable files leaked into the package"; exit 1
+          # Positive allowlist (not a denylist of known-bad names): every archived
+          # entry must be manifest.json or live under _locales/ or src/. Anything
+          # else — docs, tests, scripts, node_modules, a stray package.json — fails.
+          bad=$(unzip -Z1 "$zip" | grep -vE '^(manifest\.json|_locales/|src/)' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::Non-shippable entries leaked into the package:"
+            echo "$bad"
+            exit 1
           fi
 
       # Runtime deps must be clean (dev-only web-ext vulns are tracked separately).

@@ -185,6 +185,30 @@ test("clicking the community-list link does NOT flip the anti-slop switch", asyn
   expect(await sets()).toEqual([]); // nothing persisted
 });
 
+test("keyboard: activating the community-list link does NOT flip the anti-slop switch", async () => {
+  await mountPopup();
+  await ready();
+
+  const slop = page.locator('li[data-feature="anti-slop"]');
+  await expect(slop).toHaveAttribute("aria-checked", "true");
+
+  // Neutralize the external navigation, focus the embedded link, and press Enter
+  // exactly as a keyboard user following it would. The keydown must NOT bubble up
+  // and flip the switch — the row's exception has to hold at the keyboard too.
+  await page.evaluate(() => {
+    document
+      .querySelector('li[data-feature="anti-slop"] a')
+      .addEventListener("click", (e) => e.preventDefault());
+  });
+  await page.locator('li[data-feature="anti-slop"] a').focus();
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Space");
+
+  await expect(slop).toHaveAttribute("aria-checked", "true"); // unchanged
+  await expect(slop).toHaveClass(ON);
+  expect(await sets()).toEqual([]); // nothing persisted
+});
+
 test("radical button toggles udm=14, persists it, and messages the worker", async () => {
   await mountPopup();
   await ready();
@@ -267,10 +291,29 @@ test("manifest requests no network permission and no remote host", () => {
   expect(mf.host_permissions.some((h) => /github|githubusercontent/i.test(h))).toBe(false);
 });
 
-test("the service worker performs no external fetch", () => {
-  const sw = read("src/background/service-worker.js");
-  // The only fetch() calls must read packaged files via runtime.getURL(); no
-  // literal http(s) URL may be fetched.
-  expect(sw).not.toMatch(/fetch\(\s*["'`]https?:/i);
-  expect(sw).not.toContain("rozieres.github.io");
+test("no authored script uses a raw network primitive; every fetch is runtime.getURL", () => {
+  const files = [
+    "src/background/service-worker.js",
+    "src/content/engine.js",
+    "src/popup/popup.js",
+  ];
+  for (const f of files) {
+    const src = read(f);
+    expect(src, `${f} uses a raw network primitive`).not.toMatch(
+      /\b(XMLHttpRequest|WebSocket|EventSource|sendBeacon)\b/
+    );
+    expect(src, `${f} references the old remote rules host`).not.toContain("rozieres.github.io");
+    // The only fetch() calls may read packaged files via runtime.getURL().
+    for (const call of src.matchAll(/fetch\s*\(\s*([^)]*)/g)) {
+      expect(call[1].trim(), `${f} fetch() must use runtime.getURL()`).toMatch(
+        /^(?:browser|chrome|globalThis|self)?\.?runtime\.getURL\b/
+      );
+    }
+  }
+});
+
+test("manifest CSP pins connect-src to 'self' (platform-level local guarantee)", () => {
+  const mf = JSON.parse(read("manifest.json"));
+  const csp = mf.content_security_policy?.extension_pages || "";
+  expect(csp).toMatch(/connect-src\s+'self'/);
 });

@@ -2,8 +2,8 @@
 
 /* Hallu Block — generic masking engine (content script).
  *
- * Reads rules.json (resolved by the service worker, which lets remote hot-fix
- * rules override the bundled ones later) and the user's toggles, then for each
+ * Reads rules.json (resolved and cached by the service worker from the bundled
+ * snapshot — no remote fetch) and the user's toggles, then for each
  * rule that applies to this page:
  *   1. finds AI blocks by stable SEMANTIC selectors and by localized HEADING
  *      TEXT (never obfuscated classes), climbing to the outermost stable
@@ -55,7 +55,8 @@
   // Text/aria detection: short headings or aria-labels whose text matches the
   // localized table. Requires a stable ancestor to bound the block — if none is
   // found we skip rather than risk hiding the wrong element (the "Google changed
-  // its DOM" case is handled by hot-fixable rules + the reliable udm=14 mode).
+  // its DOM" case is handled by shipping updated selectors in a Web Store update
+  // + the reliable udm=14 mode).
   function findByText(rule) {
     const out = [];
     const wanted = (rule.textHeadings || []).map(norm);

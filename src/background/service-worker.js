@@ -43,8 +43,9 @@ async function getState() {
 }
 
 // ---- Anti-slop blocklist (family C) ------------------------------------------
-// A community CC0 hosts file (`0.0.0.0 domain` per line, # comments) bundled as a
-// snapshot; remote refresh is a later milestone (like rules.json). Parsed once,
+// A community CC0 hosts file (`0.0.0.0 domain` per line, # comments) shipped as a
+// bundled snapshot — no remote refresh (same strictly-local promise as rules.json
+// above; refreshed via Chrome Web Store updates). Parsed once,
 // then handed to the content script on demand — the raw ~4k-line file never
 // crosses into the page, only the domain array does. Kept out of getState so
 // pages with anti-slop off (or non-search pages) don't pay for it.
