@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<!--
+  Hallu Block E2E fixture — reproduces Bing's real-world behaviour: after Hallu
+  Block hides the Copilot answer and inserts its annotation bar, Bing's client
+  framework re-renders the area and drops the (foreign) bar while keeping the
+  hidden answer. The inline script below simulates that by removing any .hb-annot
+  the first two times it appears. The engine must put the bar back.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>comment fonctionne le métabolisme - Search</title>
+</head>
+<body>
+  <div id="b_content">
+    <main aria-label="Search Results">
+      <ol id="b_results">
+        <li class="b_ans b_top">
+          <div id="copans_container" class="cico_xyz">
+            <div class="answer_container" aria-label="Copilot Search">
+              <h2>Métabolisme</h2>
+              <p>Réponse générée par IA…</p>
+            </div>
+          </div>
+        </li>
+        <li class="b_algo">
+          <h2><a href="https://www.inserm.fr/metabolisme">Inserm — Le métabolisme</a></h2>
+          <div class="b_caption"><cite>inserm.fr</cite><p>Résultat organique réel.</p></div>
+        </li>
+      </ol>
+    </main>
+  </div>
+
+  <script>
+    // Simulate Bing streaming its Copilot answer: replace the <li>'s inner
+    // content repeatedly (~15 times over 1.5s). This must NOT defeat the CSS
+    // bandeau — our class + data-* live on the <li> itself (not its children),
+    // and .hb-css-annot > * hides whatever new content gets rendered in. There is
+    // no injected DOM node to strip, so no observer war.
+    var n = 0;
+    var iv = setInterval(function () {
+      var li = document.querySelector("#b_results > li.b_ans");
+      if (li) {
+        var d = document.createElement("div");
+        d.className = "answer_container";
+        d.setAttribute("aria-label", "Copilot Search");
+        d.textContent = "AI answer chunk " + n;
+        li.innerHTML = "";
+        li.appendChild(d);
+      }
+      if (++n >= 15) clearInterval(iv);
+    }, 100);
+  </script>
+</body>
+</html>
