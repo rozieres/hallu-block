@@ -111,23 +111,32 @@ body {
   color: var(--red);
   margin-bottom: 8px;
 }
-.radical button {
+/* Same on/off language as the list switches ([█]/[ ] glyph, green when on), so
+   the engaged state is unmistakable — just framed inside the "radical" card. */
+.radical .rk-toggle {
+  display: flex;
+  align-items: center;
+  gap: 11px;
   width: 100%;
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 13px;
-  background: var(--bg);
-  color: var(--ink);
-  border: 2px solid var(--ink);
-  padding: 9px;
+  background: none;
+  border: none;
+  padding: 4px 0;
   cursor: pointer;
   text-align: left;
 }
-.radical button::before { content: "▸ "; color: var(--green); }
-.radical button:hover { border-color: var(--green); }
-/* Engaged: udm=14 rewrite is live — invert to read as a pressed state. */
-.radical button.on { background: var(--ink); color: var(--bg); }
-.radical button.on::before { content: "▾ "; color: var(--green); }
+.radical .rk-toggle .check {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.2;
+  color: #bdb6a2;
+  flex: 0 0 auto;
+  user-select: none;
+}
+.radical .rk-toggle.on .check { color: var(--green); }
+.radical .rk-toggle .tg-label { font-family: var(--display); font-weight: 700; font-size: 13.5px; color: var(--muted); }
+.radical .rk-toggle.on .tg-label { color: var(--ink); }
+.radical .rk-toggle:hover .tg-label { color: var(--green); }
 .radical .rk-sub { font-size: 10.5px; color: var(--muted); margin-top: 7px; line-height: 1.4; }
 
 /* Switches are clickable rows. */

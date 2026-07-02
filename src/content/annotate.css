@@ -11,6 +11,49 @@
   display: none !important;
 }
 
+/* Removal-proof bandeau for hosts that re-render and strip injected DOM nodes
+   (Bing's Copilot). The hidden container ITSELF becomes the bar via pseudo-
+   elements — there is no DOM node for the host's MutationObserver to remove.
+   Its real content is hidden (.hb-css-annot > *); ::before is the green block
+   cursor, ::after the localized label + reveal hint (from data-* attributes,
+   which survive the host's re-renders). Clicking reveals (handled in engine.js). */
+.hb-css-annot {
+  display: block !important;
+  background: #F7F3E8 !important;
+  border: 1.5px solid #1C2333 !important;
+  border-radius: 0 !important;
+  padding: 8px 11px !important;
+  margin: 8px 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace !important;
+  font-size: 12.5px !important;
+  line-height: 1.4 !important;
+  color: #1C2333 !important;
+  cursor: pointer !important;
+}
+.hb-css-annot > * { display: none !important; }
+/* visibility:visible + display:inline defeat host clearfix rules like
+   `.b_ans::after { content:""; display:block; visibility:hidden; clear:both }`
+   (Bing) — !important beats their non-important declarations regardless of
+   specificity, so the label always shows on one line next to the ▌. */
+.hb-css-annot::before {
+  content: "▌" !important;
+  color: #319d43 !important;
+  font-size: 15px !important;
+  margin-right: 7px !important;
+  display: inline !important;
+  visibility: visible !important;
+  clear: none !important;
+}
+.hb-css-annot::after {
+  content: attr(data-hb-label) " · " attr(data-hb-show) !important;
+  color: #1C2333 !important;
+  display: inline !important;
+  visibility: visible !important;
+  clear: none !important;
+}
+
 .hb-annot {
   display: flex !important;
   align-items: center !important;

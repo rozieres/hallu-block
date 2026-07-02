@@ -10,6 +10,9 @@
 <head>
   <meta charset="utf-8">
   <title>best productivity apps - Search</title>
+  <!-- Mimic Bing's real clearfix on .b_ans::after — its visibility:hidden must
+       NOT hide Hallu Block's CSS-annotation label (regression guard). -->
+  <style>#b_results li.b_ans::after { content: ""; display: block; visibility: hidden; clear: both; }</style>
 </head>
 <body>
   <div id="b_content">
