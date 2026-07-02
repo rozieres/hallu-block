@@ -121,12 +121,32 @@ test("switches reflect stored toggles on open", async () => {
   const overview = page.locator('li[data-feature="google-ai-overview"]');
   await expect(overview).not.toHaveClass(ON);
   await expect(overview.locator(".check")).toHaveText("[ ]");
+  // Accessibility: each row is a real switch carrying its state in ARIA.
+  await expect(overview).toHaveAttribute("role", "switch");
+  await expect(overview).toHaveAttribute("aria-checked", "false");
 
   const bing = page.locator('li[data-feature="bing-copilot"]');
   await expect(bing).toHaveClass(ON);
   await expect(bing.locator(".check")).toHaveText("[█]");
+  await expect(bing).toHaveAttribute("aria-checked", "true");
 
   expect(errors).toEqual([]);
+});
+
+test("switches are keyboard-operable (Space flips role=switch state)", async () => {
+  await mountPopup();
+  await ready();
+
+  const overview = page.locator('li[data-feature="google-ai-overview"]');
+  await expect(overview).toHaveAttribute("aria-checked", "true");
+
+  await overview.focus();
+  await page.keyboard.press("Space");
+
+  await expect(overview).toHaveAttribute("aria-checked", "false");
+  await expect(overview).not.toHaveClass(ON);
+  const written = await sets();
+  expect(written[written.length - 1].toggles["google-ai-overview"]).toBe(false);
 });
 
 test("clicking a switch flips it visually and persists to storage", async () => {
@@ -162,6 +182,30 @@ test("clicking the community-list link does NOT flip the anti-slop switch", asyn
   await slop.locator("a").click();
 
   await expect(slop).toHaveClass(ON); // unchanged
+  expect(await sets()).toEqual([]); // nothing persisted
+});
+
+test("keyboard: activating the community-list link does NOT flip the anti-slop switch", async () => {
+  await mountPopup();
+  await ready();
+
+  const slop = page.locator('li[data-feature="anti-slop"]');
+  await expect(slop).toHaveAttribute("aria-checked", "true");
+
+  // Neutralize the external navigation, focus the embedded link, and press Enter
+  // exactly as a keyboard user following it would. The keydown must NOT bubble up
+  // and flip the switch — the row's exception has to hold at the keyboard too.
+  await page.evaluate(() => {
+    document
+      .querySelector('li[data-feature="anti-slop"] a')
+      .addEventListener("click", (e) => e.preventDefault());
+  });
+  await page.locator('li[data-feature="anti-slop"] a').focus();
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Space");
+
+  await expect(slop).toHaveAttribute("aria-checked", "true"); // unchanged
+  await expect(slop).toHaveClass(ON);
   expect(await sets()).toEqual([]); // nothing persisted
 });
 
@@ -238,32 +282,38 @@ for (const rs of REDIRECT_RULESETS) {
   });
 }
 
-// ---- Remote hot-fix rules (MVP-3) --------------------------------------------
-const vparts = (v) => String(v || "").split(".").map((n) => parseInt(n, 10) || 0);
-function versionGte(a, b) {
-  const pa = vparts(a);
-  const pb = vparts(b);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const x = pa[i] || 0;
-    const y = pb[i] || 0;
-    if (x !== y) return x > y;
-  }
-  return true; // equal → gte
-}
-
-test("served docs/rules.json is valid and never behind the bundled rules", () => {
-  const bundled = JSON.parse(read("src/rules/rules.json"));
-  const served = JSON.parse(read("docs/rules.json"));
-
-  expect(typeof served.version).toBe("string");
-  expect(Array.isArray(served.hide)).toBe(true);
-  // The hosted copy must be >= bundled, or clients would never adopt it (and a
-  // stale hosted file could otherwise look "newer" by accident).
-  expect(versionGte(served.version, bundled.version)).toBe(true);
+// ---- Privacy invariant: strictly local, no remote fetch ----------------------
+test("manifest requests no network permission and no remote host", () => {
+  const mf = JSON.parse(read("manifest.json"));
+  // 100%-local promise: no alarms (only used for the old daily remote refresh),
+  // and every host permission is a target SITE — never a rules-hosting origin.
+  expect(mf.permissions).not.toContain("alarms");
+  expect(mf.host_permissions.some((h) => /github|githubusercontent/i.test(h))).toBe(false);
 });
 
-test("manifest enables the remote-refresh alarm + hosting host permission", () => {
+test("no authored script uses a raw network primitive; every fetch is runtime.getURL", () => {
+  const files = [
+    "src/background/service-worker.js",
+    "src/content/engine.js",
+    "src/popup/popup.js",
+  ];
+  for (const f of files) {
+    const src = read(f);
+    expect(src, `${f} uses a raw network primitive`).not.toMatch(
+      /\b(XMLHttpRequest|WebSocket|EventSource|sendBeacon)\b/
+    );
+    expect(src, `${f} references the old remote rules host`).not.toContain("rozieres.github.io");
+    // The only fetch() calls may read packaged files via runtime.getURL().
+    for (const call of src.matchAll(/fetch\s*\(\s*([^)]*)/g)) {
+      expect(call[1].trim(), `${f} fetch() must use runtime.getURL()`).toMatch(
+        /^(?:browser|chrome|globalThis|self)?\.?runtime\.getURL\b/
+      );
+    }
+  }
+});
+
+test("manifest CSP pins connect-src to 'self' (platform-level local guarantee)", () => {
   const mf = JSON.parse(read("manifest.json"));
-  expect(mf.permissions).toContain("alarms");
-  expect(mf.host_permissions).toContain("https://rozieres.github.io/*");
+  const csp = mf.content_security_policy?.extension_pages || "";
+  expect(csp).toMatch(/connect-src\s+'self'/);
 });

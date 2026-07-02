@@ -20,22 +20,29 @@ let sw = null;
 // appeared). Newer Chrome builds disable command-line unpacked loading; there
 // the worker never shows up and the caller skips these tests.
 async function launch() {
-  context = await chromium.launchPersistentContext("", {
-    channel: "chrome",
-    headless: false, // MV3 extensions require a headful (or --headless=new) browser
-    ignoreDefaultArgs: ["--disable-extensions"], // Playwright adds this; it kills the load
-    args: [
-      `--disable-extensions-except=${EXT_ROOT}`,
-      `--load-extension=${EXT_ROOT}`,
-      "--disable-features=DisableLoadExtensionCommandLineSwitch",
-      "--lang=fr-FR",
-      "--no-first-run",
-      "--no-default-browser-check",
-      "--no-sandbox",
-      "--disable-gpu",
-      "--disable-dev-shm-usage",
-    ],
-  });
+  try {
+    context = await chromium.launchPersistentContext("", {
+      channel: "chrome",
+      headless: false, // MV3 extensions require a headful (or --headless=new) browser
+      ignoreDefaultArgs: ["--disable-extensions"], // Playwright adds this; it kills the load
+      args: [
+        `--disable-extensions-except=${EXT_ROOT}`,
+        `--load-extension=${EXT_ROOT}`,
+        "--disable-features=DisableLoadExtensionCommandLineSwitch",
+        "--lang=fr-FR",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--no-sandbox",
+        "--disable-gpu",
+        "--disable-dev-shm-usage",
+      ],
+    });
+  } catch (_) {
+    // No usable Chrome at all (not installed, sandbox, headless-only env): treat
+    // like the blocked-load case so beforeEach skips instead of the suite erroring.
+    context = null;
+    return false;
+  }
 
   sw = context.serviceWorkers()[0] || null;
   if (!sw) sw = await context.waitForEvent("serviceworker", { timeout: 8000 }).catch(() => null);

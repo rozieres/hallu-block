@@ -35,6 +35,12 @@ function applyI18n() {
     if (url) el.href = url;
   }
 
+  // The ASCII glyphs ([█]/[ ], ▌, █) are decorative — the switch state is carried
+  // by aria-checked/aria-pressed, so hide the glyphs from assistive tech.
+  for (const el of document.querySelectorAll(".check, .cur")) {
+    el.setAttribute("aria-hidden", "true");
+  }
+
   // Footer brand line: emphasize "Hallu World" inside the sentence.
   const brandEl = document.querySelector(".foot-brand");
   if (brandEl) {
@@ -111,6 +117,7 @@ async function saveToggles() {
 // look ([█] on / [ ] off) from the mockup.
 function paintLi(li, on) {
   li.classList.toggle("on", on);
+  li.setAttribute("aria-checked", String(on)); // role="switch" state
   const check = li.querySelector(".check");
   if (check) check.textContent = on ? "[█]" : "[ ]";
 }
@@ -147,13 +154,40 @@ function wireToggles() {
   for (const li of document.querySelectorAll("li[data-feature]")) {
     const feature = li.dataset.feature;
     li.style.cursor = "pointer";
-    li.addEventListener("click", (e) => {
-      // Let the embedded "community list" link work without flipping the switch.
-      if (e.target.closest("a")) return;
+
+    // Make each row a real, keyboard-operable switch for screen-reader users.
+    li.setAttribute("role", "switch");
+    li.setAttribute("tabindex", "0");
+    const labelEl = li.querySelector(".tg-label");
+    if (labelEl) li.setAttribute("aria-label", labelEl.textContent);
+    const subEl = li.querySelector(".tg-sub");
+    if (subEl) {
+      subEl.id = subEl.id || `hb-sub-${feature}`;
+      li.setAttribute("aria-describedby", subEl.id);
+    }
+
+    const flip = () => {
       toggles[feature] = !toggles[feature];
       paintLi(li, toggles[feature]);
       saveToggles();
       if (DNR_FEATURES.has(feature)) notifyDnr(feature, toggles[feature]);
+    };
+
+    li.addEventListener("click", (e) => {
+      // Let the embedded "community list" link work without flipping the switch.
+      if (e.target.closest("a")) return;
+      flip();
+    });
+    li.addEventListener("keydown", (e) => {
+      // Same exception as the click handler: let the embedded "community list"
+      // link work via the keyboard. Without this, Enter/Space on the focused
+      // link bubbles here, flips the switch, and preventDefault() even swallows
+      // the link's own navigation.
+      if (e.target.closest("a")) return;
+      if (e.key === " " || e.key === "Enter") {
+        e.preventDefault(); // Space would otherwise scroll the popup
+        flip();
+      }
     });
   }
 

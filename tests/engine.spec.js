@@ -403,8 +403,19 @@ test("Amazon Rufus toggle OFF → launcher stays visible", async () => {
   await expect(page.locator(".hb-annot")).toHaveCount(0);
 });
 
-test("bundled anti-slop blocklist is well-formed hosts data", () => {
+test("bundled anti-slop blocklist parses to clean, valid hostnames (via the SW's real HOST_RE)", () => {
   const raw = read("src/rules/slop/noai_hosts.txt");
+
+  // Use the SERVICE WORKER's ACTUAL HOST_RE, extracted from source, rather than a
+  // hardcoded copy — so tightening it in getSlopDomains() is exercised here
+  // instead of silently drifting past a green test.
+  const swSrc = read("src/background/service-worker.js");
+  const m = swSrc.match(/const HOST_RE = (\/.*\/);/);
+  expect(m, "HOST_RE literal not found in service-worker.js").toBeTruthy();
+  // eslint-disable-next-line no-eval -- test-only: reconstruct the literal regex.
+  const HOST_RE = eval(m[1]);
+  expect(HOST_RE.source).toBe("^[a-z0-9.-]+\\.[a-z]{2,}$");
+
   const hostLines = raw
     .split("\n")
     .map((l) => l.trim())
@@ -413,8 +424,24 @@ test("bundled anti-slop blocklist is well-formed hosts data", () => {
   // Every data line is hosts-file format: `0.0.0.0 <token>`.
   for (const l of hostLines) expect(l).toMatch(/^0\.0\.0\.0\s+\S+$/);
 
-  // The SW keeps only tokens that look like real domains (contain a dot); a few
-  // dotless entries (e.g. "0.0.0.0 artbreeder") exist and are correctly dropped.
-  const domains = hostLines.map((l) => l.split(/\s+/)[1]).filter((d) => d.includes("."));
-  expect(domains.length).toBeGreaterThan(2000);
+  // Replicate getSlopDomains() normalization + dedup, DRIVEN BY the real regex.
+  // Dotless entries ("artbreeder"), path/port-bearing ones and junk are dropped.
+  const seen = new Set();
+  for (const l of hostLines) {
+    const parts = l.split(/\s+/);
+    const host = (parts.length > 1 ? parts[1] : parts[0]).toLowerCase().replace(/^\*\./, "");
+    if (HOST_RE.test(host)) seen.add(host);
+  }
+  const hosts = [...seen];
+
+  expect(hosts.length).toBeGreaterThan(2000);
+  // No path / port survives normalization.
+  expect(hosts.some((h) => h.includes("/") || h.includes(":"))).toBe(false);
+  // Punycode / IDN hosts must survive the char class (regression guard) — only
+  // assert if the upstream list actually carries one.
+  const puny = hostLines
+    .map((l) => l.split(/\s+/)[1])
+    .filter(Boolean)
+    .find((h) => h.includes("xn--"));
+  if (puny) expect(HOST_RE.test(puny.toLowerCase())).toBe(true);
 });
