@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "default_locale": "fr",
   "description": "__MSG_store_short_desc__",
+  "minimum_chrome_version": "116",
 
   "icons": {
     "16": "src/assets/icons/16.png",
@@ -11,10 +12,9 @@
     "128": "src/assets/icons/128.png"
   },
 
-  "permissions": ["storage", "declarativeNetRequest", "alarms"],
+  "permissions": ["storage", "declarativeNetRequest"],
 
   "host_permissions": [
-    "https://rozieres.github.io/*",
     "*://*.google.com/*",
     "*://*.google.fr/*",
     "*://*.google.be/*",

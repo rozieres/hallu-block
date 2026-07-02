@@ -403,7 +403,7 @@ test("Amazon Rufus toggle OFF → launcher stays visible", async () => {
   await expect(page.locator(".hb-annot")).toHaveCount(0);
 });
 
-test("bundled anti-slop blocklist is well-formed hosts data", () => {
+test("bundled anti-slop blocklist parses to clean, valid hostnames", () => {
   const raw = read("src/rules/slop/noai_hosts.txt");
   const hostLines = raw
     .split("\n")
@@ -413,8 +413,14 @@ test("bundled anti-slop blocklist is well-formed hosts data", () => {
   // Every data line is hosts-file format: `0.0.0.0 <token>`.
   for (const l of hostLines) expect(l).toMatch(/^0\.0\.0\.0\s+\S+$/);
 
-  // The SW keeps only tokens that look like real domains (contain a dot); a few
-  // dotless entries (e.g. "0.0.0.0 artbreeder") exist and are correctly dropped.
-  const domains = hostLines.map((l) => l.split(/\s+/)[1]).filter((d) => d.includes("."));
-  expect(domains.length).toBeGreaterThan(2000);
+  // Mirror getSlopDomains(): keep only real bare hostnames. Dotless entries
+  // ("artbreeder"), path-bearing ones ("youtube.com/@Foo") and junk are dropped.
+  const HOST_RE = /^[a-z0-9.-]+\.[a-z]{2,}$/;
+  const hosts = hostLines
+    .map((l) => l.split(/\s+/)[1].toLowerCase().replace(/^\*\./, ""))
+    .filter((h) => HOST_RE.test(h));
+
+  expect(hosts.length).toBeGreaterThan(2000);
+  // No path / port survives normalization.
+  expect(hosts.some((h) => h.includes("/") || h.includes(":"))).toBe(false);
 });
