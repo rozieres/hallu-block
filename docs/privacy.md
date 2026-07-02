@@ -10,7 +10,7 @@ L'extension n'effectue **aucun appel réseau** : elle ne contacte aucun serveur,
 
 ## Ce que fait l'extension, localement
 
-- **Masquer des contenus IA** (Aperçus IA et Mode IA de Google, Copilot de Bing, assistant de DuckDuckGo, widgets de YouTube et Amazon) directement dans la page que vous consultez, selon des règles de détection **embarquées** dans l'extension.
+- **Masquer des contenus IA** (Aperçus IA de Google, Copilot de Bing, assistant de DuckDuckGo, widgets de YouTube et Amazon) directement dans la page que vous consultez, selon des règles de détection **embarquées** dans l'extension.
 - **Rediriger certaines URL** vers une variante sans IA (par ex. `udm=14` pour le "Mode Google classique", `noai=1` sur DuckDuckGo). Ces redirections sont réalisées en local par le navigateur via `declarativeNetRequest` — aucune requête ne nous est envoyée.
 - **Compter** le nombre de blocs IA écartés. Ce compteur est stocké dans `storage.local` (sur votre machine) et n'est jamais transmis.
 

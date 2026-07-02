@@ -26,9 +26,6 @@
   "toggle_google_overview_label": { "message": "Google's AI summaries" },
   "toggle_google_overview_sub": { "message": "The block Google plants at the top of your results (AI Overviews)." },
 
-  "toggle_google_aimode_label": { "message": "Google's AI Mode" },
-  "toggle_google_aimode_sub": { "message": "A whole panel that chats with you instead of listing links." },
-
   "toggle_slop_label": { "message": "AI slop filter" },
   "toggle_slop_sub": { "message": "Pushes sites with AI-generated content out of your results." },
   "slop_list_link": { "message": "Community-maintained list →" },
@@ -61,7 +58,6 @@
 
   "annot_generic": { "message": "AI content hidden by Hallu Block" },
   "annot_google_overview": { "message": "Google's AI summary hidden by Hallu Block" },
-  "annot_google_aimode": { "message": "Google's AI Mode hidden by Hallu Block" },
   "annot_slop": { "message": "Result skipped: site flagged \"AI content\" by the community list" },
   "annot_show": { "message": "show" },
   "annot_hide": { "message": "hide" },

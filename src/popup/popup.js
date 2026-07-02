@@ -84,7 +84,6 @@ async function renderCounter() {
 // before the user touches anything, and on a fresh profile storage is empty.
 const DEFAULT_TOGGLES = {
   "google-ai-overview": true,
-  "google-ai-mode": true,
   "anti-slop": true,
   "ddg-assist": true,
   "youtube-ask": true,

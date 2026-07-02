@@ -20,14 +20,5 @@ html:not(.hb-show-google-ai-overview) div[data-mcpr]:has(div[data-async-type="ai
   display: none !important;
 }
 
-/* AI Mode (Mode IA): the nav tab that swaps the link list for a chat panel.
-   Hook is the semantic tab container carrying the udm=50 entry point — never an
-   obfuscated class. The tab is server-rendered with the nav, so hiding it at
-   document_start avoids a flash before the engine confirms + annotates it.
-   Released page-wide by html.hb-show-google-ai-mode (toggle off / "afficher"). */
-html:not(.hb-show-google-ai-mode) [role="navigation"] [role="list"] > [role="listitem"]:has(a[href*="udm=50"]) {
-  display: none !important;
-}
-
 /* Note: the engine-applied `.hb-hidden` class lives in annotate.css, which is
    injected wherever the engine runs (not just Google). */
