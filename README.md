@@ -2,7 +2,7 @@
 
 **L'IA seulement quand vous la demandez.**
 
-Extension navigateur qui masque l'IA imposée par défaut dans la navigation grand public : résumés IA de Google (AI Overviews), Mode IA, filtre anti-slop, et widgets IA de YouTube, Bing, DuckDuckGo, Amazon. 100 % local, zéro tracking, open source.
+Extension navigateur qui masque l'IA imposée par défaut dans la navigation grand public : résumés IA de Google (AI Overviews), filtre anti-slop, et widgets IA de YouTube, Bing, DuckDuckGo, Amazon. 100 % local, zéro tracking, open source.
 
 Un outil de [Hallu World](https://halluworld.kessel.media) — la newsletter fascinée par l'IA, consternée par ce qu'on en fait.
 
@@ -12,7 +12,7 @@ MVP fonctionnel, **Chrome / Edge d'abord** (Manifest V3). Spécifications intern
 
 Fonctionnalités embarquées :
 
-- **Google** — masquage des **Aperçus IA** (AI Overviews) et du **Mode IA**, avec barre d'annotation. Option **"Mode Google classique"** (redirection `udm=14`). Couverture : `google.com`, `.fr`, `.be`, `.ch`, `.ca`.
+- **Google** — masquage des **Aperçus IA** (AI Overviews), avec barre d'annotation. Option **"Mode Google classique"** (redirection `udm=14`). Couverture : `google.com`, `.fr`, `.be`, `.ch`, `.ca`.
 - **Filtre anti-slop** — écarte des résultats (Google, Bing, DuckDuckGo) les sites d'une liste communautaire de contenus générés par IA.
 - **DuckDuckGo** — désactive l'assistant IA (`noai=1`).
 - **YouTube** et **Amazon (Rufus)** — masquage des widgets IA.

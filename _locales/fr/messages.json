@@ -26,9 +26,6 @@
   "toggle_google_overview_label": { "message": "Résumés IA de Google" },
   "toggle_google_overview_sub": { "message": "Le pavé que Google pose en haut des résultats (AI Overviews)." },
 
-  "toggle_google_aimode_label": { "message": "Mode IA de Google" },
-  "toggle_google_aimode_sub": { "message": "Un panneau entier qui discute avec vous plutôt que de vous lister des liens." },
-
   "toggle_slop_label": { "message": "Filtre anti-slop IA" },
   "toggle_slop_sub": { "message": "Écarte des résultats les sites aux contenus générés par IA." },
   "slop_list_link": { "message": "Liste communautaire →" },
@@ -61,7 +58,6 @@
 
   "annot_generic": { "message": "Contenu IA masqué par Hallu Block" },
   "annot_google_overview": { "message": "Résumé IA de Google masqué par Hallu Block" },
-  "annot_google_aimode": { "message": "Mode IA de Google masqué par Hallu Block" },
   "annot_slop": { "message": "Résultat écarté : site signalé \"contenu IA\" par la liste communautaire" },
   "annot_show": { "message": "afficher" },
   "annot_hide": { "message": "masquer" },
