@@ -13,7 +13,7 @@ const DEFAULT_TOGGLES = {
   "ddg-assist": true,
   "youtube-ask": true,
   "amazon-rufus": true,
-  "bing-copilot": false,
+  "bing-copilot": true,
   "show-blocks": true,
   udm14: false,
 };

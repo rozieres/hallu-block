@@ -16,7 +16,7 @@ Fonctionnalités embarquées :
 - **Filtre anti-slop** — écarte des résultats (Google, Bing, DuckDuckGo) les sites d'une liste communautaire de contenus générés par IA.
 - **DuckDuckGo** — désactive l'assistant IA (`noai=1`).
 - **YouTube** et **Amazon (Rufus)** — masquage des widgets IA.
-- **Bing (Copilot)** — disponible mais **désactivé par défaut** (expérimental).
+- **Bing (Copilot)** — masquage des réponses IA (Copilot), activé par défaut. Rendu via un bandeau CSS "removal-proof" (Bing supprime les nœuds injectés).
 - Popup complet (FR + EN), compteur **100 % local**.
 
 **Vie privée : aucune donnée ne sort du navigateur.** Les règles de détection sont **embarquées** dans l'extension — il n'y a aucun appel réseau. Quand un site change sa mise en page, on corrige les sélecteurs dans `src/rules/rules.json` et on publie une mise à jour du Chrome Web Store (pas de récupération de règles à distance). Voir [docs/privacy.md](docs/privacy.md).

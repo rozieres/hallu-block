@@ -5,6 +5,7 @@
 const LINKS = {
   newsletter: "https://halluworld.kessel.media",
   about: "https://github.com/rozieres/hallu-block",
+  feedback: "mailto:contact@halluworld.fr",
   "slop-list": "https://codeberg.org/just_a_husk/uBlockOrigin-AI-Blocklist",
 };
 
@@ -59,6 +60,7 @@ function applyI18n() {
 
   greenifyArrow(document.querySelector(".foot-brand"));
   greenifyArrow(document.querySelector(".foot-about"));
+  greenifyArrow(document.querySelector(".foot-feedback"));
 }
 
 async function renderCounter() {
@@ -88,7 +90,7 @@ const DEFAULT_TOGGLES = {
   "ddg-assist": true,
   "youtube-ask": true,
   "amazon-rufus": true,
-  "bing-copilot": false,
+  "bing-copilot": true,
   "show-blocks": true,
   udm14: false,
 };

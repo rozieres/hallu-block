@@ -155,7 +155,12 @@ body {
 }
 .pop-foot a:hover { color: var(--green); }
 .pop-foot a .arr { color: var(--green); }
-.pop-foot a.foot-brand { font-family: var(--body); font-weight: 400; font-size: 11px; color: var(--ink); line-height: 1.45; }
+/* Brand line is the primary CTA — bold. "Hallu World" stays green within it. */
+.pop-foot a.foot-brand { font-family: var(--body); font-weight: 700; font-size: 11px; color: var(--ink); line-height: 1.45; }
 .pop-foot a.foot-brand strong { color: var(--green); }
+
+/* Secondary links sit side by side under the CTA, in normal weight. */
+.foot-row { display: flex; gap: 18px; border-bottom: 1px solid #e3ddcd; }
+.foot-row a { border-bottom: none; font-weight: 400; }
 .priv { font-family: var(--mono); font-size: 9.5px; color: var(--muted); margin-top: 11px; display: flex; align-items: center; gap: 6px; }
 .priv::before { content: "●"; color: var(--green); font-size: 8px; }

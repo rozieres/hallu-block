@@ -54,6 +54,7 @@
   },
   "foot_brand_name": { "message": "Hallu World" },
   "foot_about": { "message": "À propos →" },
+  "foot_feedback": { "message": "Feedback →" },
   "foot_privacy": { "message": "Aucune donnée ne sort de votre navigateur." },
 
   "annot_generic": { "message": "Contenu IA masqué par Hallu Block" },

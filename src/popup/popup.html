@@ -50,8 +50,8 @@
 
     <div class="tg-group" data-i18n="group_other"></div>
     <ul class="toggles">
-      <li data-feature="bing-copilot">
-        <span class="check">[ ]</span>
+      <li class="on" data-feature="bing-copilot">
+        <span class="check">[█]</span>
         <div>
           <span class="tg-label" data-i18n="toggle_bing_label"></span>
           <span class="tg-sub" data-i18n="toggle_bing_sub"></span>
@@ -93,7 +93,10 @@
 
     <div class="pop-foot">
       <a class="foot-brand" data-href="newsletter" target="_blank" rel="noopener"></a>
-      <a class="foot-about" data-i18n="foot_about" data-href="about" target="_blank" rel="noopener"></a>
+      <div class="foot-row">
+        <a class="foot-about" data-i18n="foot_about" data-href="about" target="_blank" rel="noopener"></a>
+        <a class="foot-feedback" data-i18n="foot_feedback" data-href="feedback"></a>
+      </div>
       <p class="priv" data-i18n="foot_privacy"></p>
     </div>
   </div>
