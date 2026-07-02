@@ -325,7 +325,9 @@
   // Reveal for CSS-annotation mode (Bing): clicking the pseudo-element bandeau
   // drops the .hb-css-annot class so the real content shows. Delegated on the
   // document so it survives host re-renders. data-hbDone stays set, so apply()
-  // won't re-hide it.
+  // won't re-hide it. NOTE: this reveal is intentionally one-way — unlike the DOM
+  // annotation bar there is no re-hide, because on Bing re-inserting a control
+  // that survives Copilot's node-stripping observer isn't reliably possible.
   document.addEventListener("click", (e) => {
     const t = e.target.closest && e.target.closest(".hb-css-annot");
     if (t) t.classList.remove("hb-css-annot");

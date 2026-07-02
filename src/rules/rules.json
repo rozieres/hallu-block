@@ -78,7 +78,6 @@
     "id": "anti-slop",
     "hosts": ["google.com", "google.fr", "google.be", "google.ch", "google.ca", "bing.com", "duckduckgo.com"],
     "resultSelector": "#rso div.g, #b_results > li.b_algo, article[data-testid=\"result\"]",
-    "domainLink": "a[href]",
     "annotateKey": "annot_slop",
     "listName": "uBlockOrigin-AI-Blocklist",
     "listUrl": "https://codeberg.org/just_a_husk/uBlockOrigin-AI-Blocklist"
