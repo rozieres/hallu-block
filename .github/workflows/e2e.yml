@@ -21,11 +21,30 @@ jobs:
 
       - run: npm ci
 
+      # Fast, dependency-free green gate: JSON valid, files present, locales in
+      # sync, DEFAULT_TOGGLES aligned, strictly-local invariant holds.
+      - run: npm run lint
+
       # The suite launches real Google Chrome (channel: "chrome") headful, so we
       # install Chrome + system deps and run it under a virtual framebuffer.
       - run: npx playwright install --with-deps chrome
 
       - run: xvfb-run -a npm test
+
+      # The artifact must be publishable: build it and prove nothing internal leaks.
+      - run: npm run build
+
+      - name: Package contains only shippable files
+        run: |
+          zip=$(ls web-ext-artifacts/*.zip | head -1)
+          echo "Inspecting $zip"
+          unzip -l "$zip"
+          if unzip -l "$zip" | grep -Ei '_reflexion|/tests/|/docs/|\.github|node_modules|package(-lock)?\.json|playwright|scripts/'; then
+            echo "::error::Non-shippable files leaked into the package"; exit 1
+          fi
+
+      # Runtime deps must be clean (dev-only web-ext vulns are tracked separately).
+      - run: npm audit --omit=dev
 
       - if: failure()
         uses: actions/upload-artifact@v4

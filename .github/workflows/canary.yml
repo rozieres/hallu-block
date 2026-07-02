@@ -28,14 +28,35 @@ jobs:
       # Headless bundled Chromium is enough for DOM probes (no extension load).
       - run: npx playwright install --with-deps chromium
 
-      - run: npm run test:canary
+      - name: Run canary
+        run: |
+          set -o pipefail
+          npm run test:canary -- --reporter=list 2>&1 | tee canary.log
+
+      # Surface pass/skip/fail even on a green run: a long tail of SKIPPED probes
+      # on Google/DDG means "not actually verified", which a green check would hide.
+      - name: Summarize probes
+        if: always()
+        run: |
+          {
+            echo "## Canary — $(date -u +%F)"
+            echo '```'
+            grep -Ei '✓|✘|passed|skipped|failed|did not render|consent|unreachable' canary.log | tail -n 30 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Open an issue on drift
         if: failure()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Don't file a duplicate if a canary issue is already open.
+          open=$(gh issue list --state open --search 'in:title "Canary: live-site DOM drift"' --json number --jq 'length')
+          if [ "${open:-0}" -gt 0 ]; then
+            echo "An open canary issue already exists — skipping duplicate."
+            exit 0
+          fi
           gh issue create \
             --title "Canary: live-site DOM drift detected ($(date -u +%F))" \
-            --body "The daily canary failed — a target site likely changed the DOM our selectors depend on, or the upstream anti-slop blocklist moved. Review and hot-fix docs/rules.json if needed. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --body "The daily canary failed — a target site likely changed the DOM our selectors depend on, or the upstream anti-slop blocklist moved. Since rules ship bundled, fix the selectors in src/rules/rules.json and publish a Chrome Web Store update. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
             || true
