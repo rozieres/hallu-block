@@ -19,16 +19,12 @@
   },
 
   "host_permissions": [
-    "*://*.google.com/*",
-    "*://*.google.fr/*",
-    "*://*.google.be/*",
-    "*://*.google.ch/*",
-    "*://*.google.ca/*",
-    "*://*.bing.com/*",
-    "*://*.duckduckgo.com/*",
-    "*://*.youtube.com/*",
-    "*://*.amazon.fr/*",
-    "*://*.amazon.com/*"
+    "*://*.google.com/search*",
+    "*://*.google.fr/search*",
+    "*://*.google.be/search*",
+    "*://*.google.ch/search*",
+    "*://*.google.ca/search*",
+    "*://*.duckduckgo.com/*"
   ],
 
   "background": {
