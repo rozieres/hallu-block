@@ -35,4 +35,4 @@ Quand un site modifie sa mise en page et qu'un filtre doit être corrigé, la co
 
 ## Contact
 
-Hallu Block est un outil libre et open source de [Hallu World](https://halluworld.kessel.media). Code source : <https://github.com/rozieres/hallu-block>.
+Hallu Block est un outil libre et open source de [Hallu World](https://halluworld.fr/). Code source : <https://github.com/rozieres/hallu-block>.

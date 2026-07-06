@@ -3,7 +3,7 @@
 // External links. The "À propos" page is a later milestone — for now it points
 // at the public repo. The slop-list link is the community source (transparency).
 const LINKS = {
-  newsletter: "https://halluworld.kessel.media",
+  newsletter: "https://halluworld.fr/",
   about: "https://github.com/rozieres/hallu-block",
   feedback: "mailto:contact@halluworld.fr",
   "slop-list": "https://codeberg.org/just_a_husk/uBlockOrigin-AI-Blocklist",
