@@ -1,6 +1,6 @@
 {
   "name": "hallu-block",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Browser extension that hides the AI forced on you by default. A free tool by Hallu World.",
   "private": true,
   "license": "MIT",
