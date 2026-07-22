@@ -11,6 +11,23 @@ const LINKS = {
 
 const t = (key, subs) => browser.i18n.getMessage(key, subs);
 
+// Safari singled out cleanly: navigator.vendor is "Apple Computer, Inc." only on
+// Safari ("Google Inc." on Chrome/Edge, "" on Firefox). We can't rely on the UA
+// string — Chrome's also contains "Safari".
+const IS_SAFARI = navigator.vendor === "Apple Computer, Inc.";
+
+// The two DNR-redirect features (udm=14 "Mode Google classique" and DuckDuckGo
+// noai=1) are unreliable on Safari: its declarativeNetRequest `redirect` action
+// doesn't work from a search-results page (see docs/safari.md). Rather than show
+// dead switches, hide them there. Everything else (DOM masking) works.
+function hideUnsupported() {
+  if (!IS_SAFARI) return;
+  const radical = document.querySelector(".radical"); // udm=14: kicker + button + sub
+  if (radical) radical.style.display = "none";
+  const ddg = document.querySelector('li[data-feature="ddg-assist"]');
+  if (ddg) ddg.style.display = "none";
+}
+
 // Turn a trailing "→" into a green arrow span (matches the mockup).
 function greenifyArrow(el) {
   const text = el.textContent;
@@ -205,6 +222,7 @@ function wireToggles() {
 
 async function init() {
   applyI18n();
+  hideUnsupported();
   await loadToggles();
   renderToggleState();
   wireToggles();

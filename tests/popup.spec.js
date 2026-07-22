@@ -47,7 +47,7 @@ test.afterEach(async () => {
 
 // Mount popup.html (minus its real <script>/<link> tags), stub the WebExtension
 // APIs, then inject popup.js so init() runs against the stub.
-async function mountPopup({ toggles } = {}) {
+async function mountPopup({ toggles, vendor } = {}) {
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
 
@@ -58,9 +58,12 @@ async function mountPopup({ toggles } = {}) {
   await page.addStyleTag({ content: POPUP_CSS });
 
   await page.evaluate(
-    ({ messages, toggles }) => {
+    ({ messages, toggles, vendor }) => {
       window.__sets = [];
       window.__msgs = [];
+      // popup.js reads navigator.vendor at load to single out Safari; override it
+      // here (before the script tag is injected) so we can exercise that path.
+      if (vendor != null) Object.defineProperty(navigator, "vendor", { value: vendor, configurable: true });
       const store = {};
       if (toggles) store.toggles = toggles;
       window.browser = {
@@ -98,7 +101,7 @@ async function mountPopup({ toggles } = {}) {
         },
       };
     },
-    { messages: MESSAGES, toggles }
+    { messages: MESSAGES, toggles, vendor }
   );
 
   await page.addScriptTag({ content: POPUP_JS });
@@ -249,6 +252,30 @@ test("a non-DNR switch does NOT message the worker", async () => {
 
   await page.locator('li[data-feature="youtube-ask"]').click();
   expect(await msgs()).toEqual([]); // only storage was written, no ruleset call
+});
+
+// Safari can't run the DNR-redirect features reliably (see docs/safari.md), so the
+// popup hides them there — but nowhere else.
+test("Safari: the two DNR-redirect controls (udm=14 + DuckDuckGo) are hidden", async () => {
+  const { errors } = await mountPopup({ vendor: "Apple Computer, Inc." });
+  await ready();
+
+  await expect(page.locator(".radical")).toBeHidden(); // udm=14 block
+  await expect(page.locator('li[data-feature="ddg-assist"]')).toBeHidden();
+
+  // DOM-masking features are unaffected and stay visible.
+  await expect(page.locator('li[data-feature="google-ai-overview"]')).toBeVisible();
+  await expect(page.locator('li[data-feature="bing-copilot"]')).toBeVisible();
+  await expect(page.locator('li[data-feature="youtube-ask"]')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("non-Safari (Chrome vendor): those DNR controls remain visible", async () => {
+  await mountPopup({ vendor: "Google Inc." });
+  await ready();
+
+  await expect(page.locator(".radical")).toBeVisible();
+  await expect(page.locator('li[data-feature="ddg-assist"]')).toBeVisible();
 });
 
 // Both family-A rulesets: valid, loop-safe shape + correctly registered.

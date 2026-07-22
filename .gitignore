@@ -12,6 +12,9 @@ dist/
 web-ext-artifacts/
 *.zip
 
+# Safari — projet Xcode généré par safari-web-extension-converter (voir docs/safari.md)
+safari/
+
 # Tests (Playwright)
 test-results/
 playwright-report/
