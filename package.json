@@ -11,8 +11,13 @@
   },
   "scripts": {
     "lint": "node scripts/check.mjs",
-    "lint:webext": "bash scripts/pack.sh lint",
-    "build": "bash scripts/pack.sh build",
+    "lint:webext": "bash scripts/pack.sh lint chrome",
+    "lint:firefox": "bash scripts/pack.sh lint firefox",
+    "build": "bash scripts/pack.sh build chrome",
+    "build:chrome": "bash scripts/pack.sh build chrome",
+    "build:firefox": "bash scripts/pack.sh build firefox",
+    "stage:chrome": "bash scripts/pack.sh stage chrome",
+    "stage:firefox": "bash scripts/pack.sh stage firefox",
     "test": "playwright test",
     "test:canary": "playwright test --config=playwright.canary.config.js",
     "vendor:polyfill": "cp node_modules/webextension-polyfill/dist/browser-polyfill.min.js src/lib/browser-polyfill.js"

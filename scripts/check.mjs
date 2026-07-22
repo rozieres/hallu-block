@@ -13,13 +13,17 @@
 //   5. the "100% local" privacy promise holds: no network permission, no remote
 //      host, no raw network primitive (fetch to a non-getURL arg, XHR, WebSocket,
 //      EventSource, sendBeacon) in ANY authored script, and a CSP that pins
-//      connect-src to 'self'.
+//      connect-src to 'self';
+//   6. the DERIVED Firefox manifest (scripts/manifest.mjs) is sound: no MV3
+//      service_worker, a background.scripts entry that exists, a gecko id, and
+//      the same strictly-local host_permissions.
 //
 // Exit 0 = release-safe. Exit 1 = a problem a reviewer or user would hit.
 
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { toFirefox } from "./manifest.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
@@ -151,6 +155,46 @@ for (const f of scriptFiles) {
 const csp = manifest?.content_security_policy?.extension_pages || "";
 if (!/connect-src\s+'self'/.test(csp)) {
   fail("manifest content_security_policy.extension_pages must pin connect-src to 'self'");
+}
+
+// 6 — the DERIVED Firefox manifest must be sound. The Chrome manifest above is
+// the single source of truth; `npm run build:firefox` ships whatever toFirefox()
+// produces, so validate it here rather than let a broken derivation reach AMO.
+if (manifest) {
+  let ff;
+  try {
+    ff = toFirefox(manifest);
+  } catch (e) {
+    fail(`Firefox manifest derivation threw: ${e.message}`);
+  }
+  if (ff) {
+    // Firefox has no MV3 service worker: the derivation must swap it for an
+    // event-page `scripts` array pointing at the (existing) worker file.
+    if (ff.background?.service_worker) {
+      fail("derived Firefox manifest still has background.service_worker (Firefox rejects it)");
+    }
+    const scripts = ff.background?.scripts;
+    if (!Array.isArray(scripts) || scripts.length === 0) {
+      fail("derived Firefox manifest has no background.scripts");
+    } else {
+      for (const s of scripts) if (!exists(s)) fail(`Firefox background.scripts references a missing file: ${s}`);
+    }
+    // AMO needs a stable add-on id; the gecko block must survive derivation.
+    if (!ff.browser_specific_settings?.gecko?.id) {
+      fail("derived Firefox manifest is missing browser_specific_settings.gecko.id");
+    }
+    // Chrome-only hint must not leak into the Firefox build.
+    if (ff.minimum_chrome_version) {
+      fail("derived Firefox manifest still carries minimum_chrome_version");
+    }
+    // The strictly-local promise must hold for Firefox too (host_permissions are
+    // carried over verbatim, but assert rather than assume).
+    for (const h of ff.host_permissions || []) {
+      if (/github|githubusercontent|amazonaws|cloudfront/i.test(h)) {
+        fail(`Firefox host_permission "${h}" is not a target site — the build must stay strictly local`);
+      }
+    }
+  }
 }
 
 // ---- report ------------------------------------------------------------------

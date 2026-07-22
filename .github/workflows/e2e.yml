@@ -31,23 +31,30 @@ jobs:
 
       - run: xvfb-run -a npm test
 
-      # The artifact must be publishable: build it and prove nothing internal leaks.
+      # Both store artifacts must be publishable: build them and prove nothing
+      # internal leaks. Firefox's manifest is derived from the Chrome canonical.
       - run: npm run build
+      - run: npm run build:firefox
 
-      - name: Package contains only shippable files
+      # The Firefox package must also pass web-ext's own validator (0 errors).
+      # (The Chrome target's `lint:webext` fails by design — see the script.)
+      - run: npm run lint:firefox
+
+      - name: Packages contain only shippable files
         run: |
-          zip=$(ls web-ext-artifacts/*.zip | head -1)
-          echo "Inspecting $zip"
-          unzip -l "$zip"
           # Positive allowlist (not a denylist of known-bad names): every archived
           # entry must be manifest.json or live under _locales/ or src/. Anything
           # else — docs, tests, scripts, node_modules, a stray package.json — fails.
-          bad=$(unzip -Z1 "$zip" | grep -vE '^(manifest\.json|_locales/|src/)' || true)
-          if [ -n "$bad" ]; then
-            echo "::error::Non-shippable entries leaked into the package:"
-            echo "$bad"
-            exit 1
-          fi
+          for zip in web-ext-artifacts/*.zip; do
+            echo "Inspecting $zip"
+            unzip -l "$zip"
+            bad=$(unzip -Z1 "$zip" | grep -vE '^(manifest\.json|_locales/|src/)' || true)
+            if [ -n "$bad" ]; then
+              echo "::error::Non-shippable entries leaked into $zip:"
+              echo "$bad"
+              exit 1
+            fi
+          done
 
       # Runtime deps must be clean (dev-only web-ext vulns are tracked separately).
       - run: npm audit --omit=dev
